@@ -19,3 +19,20 @@ See `docs/architecture.md` and `PROJECT_CONTEXT.md` for full design details.
 
 ## Setup
 See project setup commands in the accompanying instructions.
+
+
+## Phase1
+Workflow: how it worked
+section_rules.json must be valid JSON and structured as a list of rule entries.
+The test file uses Python unittest to open and parse that JSON.
+The test asserts the rule data matches expected values.
+
+Running:
+python -m unittest backend.tests.test_section_mapper
+The test passed, which means:
+JSON was parseable
+the file contained the expected rule entry
+field names and values matched the test assertions
+Key point
+The test checks the data file itself, not application logic.
+It ensures section_rules.json is correctly shaped and contains the expected tenant rule.
