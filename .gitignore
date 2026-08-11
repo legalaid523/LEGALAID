@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# Env files
+.env
+backend/.env
+frontend/.env
+
+# Node
+node_modules/
+frontend/dist/
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/
+
+# Model checkpoints (large files)
+*.bin
+*.pt
+*.safetensors
+checkpoints/
+
+# PDFs generated at runtime (test outputs)
+backend/app/generated/
