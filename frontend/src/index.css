@@ -1,0 +1,87 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Merriweather:wght@400;700&family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-cream-50 text-navy-900 font-sans;
+    font-feature-settings: "kern" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3 {
+    @apply font-serif-display;
+  }
+
+  button {
+    @apply transition-colors duration-200;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-4 py-2 bg-gold-500 text-white font-semibold rounded-lg hover:bg-gold-600 transition-colors active:bg-gold-700;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2 border border-navy-900 text-navy-900 font-semibold rounded-lg hover:bg-navy-900 hover:text-white transition-colors;
+  }
+
+  .card-border {
+    @apply border-l-4 border-gold-500;
+  }
+
+  .safe-area-inset {
+    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+}
+
+/* Custom loading animation - scales timing for visibility */
+@keyframes gavel-tap {
+  0% {
+    transform: translateY(0px) rotateZ(0deg);
+  }
+  25% {
+    transform: translateY(-4px) rotateZ(-5deg);
+  }
+  50% {
+    transform: translateY(12px) rotateZ(18deg);
+  }
+  75% {
+    transform: translateY(-4px) rotateZ(-5deg);
+  }
+  100% {
+    transform: translateY(0px) rotateZ(0deg);
+  }
+}
+
+@keyframes scale-tilt {
+  0% {
+    transform: perspective(800px) rotateZ(0deg) rotateX(0deg);
+  }
+  20% {
+    transform: perspective(800px) rotateZ(-10deg) rotateX(-2deg);
+  }
+  40% {
+    transform: perspective(800px) rotateZ(0deg) rotateX(0deg);
+  }
+  60% {
+    transform: perspective(800px) rotateZ(10deg) rotateX(2deg);
+  }
+  80% {
+    transform: perspective(800px) rotateZ(0deg) rotateX(0deg);
+  }
+  100% {
+    transform: perspective(800px) rotateZ(0deg) rotateX(0deg);
+  }
+}
