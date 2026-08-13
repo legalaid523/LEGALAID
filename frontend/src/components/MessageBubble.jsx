@@ -1,38 +1,70 @@
 import React from 'react';
+import { ShieldAlert } from 'lucide-react';
 
 /**
- * MessageBubble Component
- * Displays user and bot messages with legal-themed styling
+ * MessageBubble — user (navy, right) and bot (cream, gold left border) messages
  */
-export default function MessageBubble({ message, isUser = false, timestamp = null }) {
+export default function MessageBubble({
+  message,
+  isUser = false,
+  timestamp = null,
+  showDisclaimer = false,
+}) {
   const formatTime = (ts) => {
     if (!ts) return null;
-    const date = new Date(ts);
-    return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+    return new Date(ts).toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+  const renderText = (text) => {
+    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return (
+          <strong key={i} className="font-semibold">
+            {part.slice(2, -2)}
+          </strong>
+        );
+      }
+      return part;
+    });
   };
 
   return (
     <div
-      className={`flex gap-3 mb-4 animate-fadeIn ${isUser ? 'flex-row-reverse justify-end' : 'flex-row justify-start'}`}
-      style={{
-        animation: 'fadeIn 0.3s ease-in',
-      }}
+      className={`flex mb-5 animate-fade-in ${isUser ? 'justify-end' : 'justify-start'}`}
     >
-      {/* Message bubble */}
       <div
-        className={`max-w-xs px-4 py-3 rounded-lg ${
+        className={`max-w-[85%] sm:max-w-[75%] px-4 py-3.5 rounded-xl ${
           isUser
-            ? 'bg-navy-900 text-white rounded-tr-none'
-            : 'bg-white text-navy-900 rounded-tl-none card-border'
+            ? 'bg-navy-900 text-white rounded-br-sm'
+            : 'bg-cream-100 text-navy-900 rounded-bl-sm border-l-4 border-gold-500 shadow-sm'
         }`}
       >
-        <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">
-          {message}
+        <p className="text-base leading-relaxed break-words whitespace-pre-wrap">
+          {renderText(message)}
         </p>
+
+        {showDisclaimer && (
+          <div className="mt-3 pt-3 border-t border-gold-500/30 flex items-start gap-2">
+            <ShieldAlert
+              size={16}
+              className="text-gold-600 flex-shrink-0 mt-0.5"
+              aria-hidden
+            />
+            <p className="text-sm text-navy-800 leading-snug">
+              This is not a substitute for professional legal advice.
+            </p>
+          </div>
+        )}
+
         {timestamp && (
           <p
             className={`text-xs mt-2 ${
-              isUser ? 'text-gray-300' : 'text-gray-600'
+              isUser ? 'text-cream-200/70' : 'text-navy-700/60'
             }`}
           >
             {formatTime(timestamp)}
@@ -41,22 +73,4 @@ export default function MessageBubble({ message, isUser = false, timestamp = nul
       </div>
     </div>
   );
-}
-
-/* CSS for fadeIn animation */
-if (typeof document !== 'undefined') {
-  const style = document.createElement('style');
-  style.textContent = `
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(8px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-  `;
-  document.head.appendChild(style);
 }

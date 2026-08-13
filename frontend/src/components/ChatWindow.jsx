@@ -1,383 +1,305 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, Mic, Info, ShieldAlert } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Scale, Languages, Send, Mic, Cpu, CheckCircle2, ChevronDown, Code } from 'lucide-react';
 import MessageBubble from './MessageBubble';
 import LoadingIndicator from './LoadingIndicator';
 import DomainBadge from './DomainBadge';
-import ConfidenceFlagsCard from './ConfidenceFlagsCard';
-import RightsExplanationCard from './RightsExplanationCard';
-import PdfDownloadButton from './PdfDownloadButton';
+import { classifyDomain } from '../api/domainClassifier';
+
+const LANGUAGES = ['English', 'Hindi', 'Hinglish'];
+
+let messageId = 1;
+const nextId = () => ++messageId;
 
 /**
- * ChatWindow Component
- * Main chat interface for the legal aid assistant
+ * ChatWindow — Model Classification Performance & Accuracy Evaluation Interface
  */
 export default function ChatWindow() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [domain, setDomain] = useState(null);
-  const [domainConfidence, setDomainConfidence] = useState(null);
-  const [stage, setStage] = useState('intro'); // intro, classifying, questioning, extracted, reviewing, results
-  const [confidenceFlags, setConfidenceFlags] = useState([]);
-  const [showRights, setShowRights] = useState(false);
-  const [showPdf, setShowPdf] = useState(false);
+  const [language, setLanguage] = useState('English');
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
+  const [latestClassification, setLatestClassification] = useState(null);
+  const [showJson, setShowJson] = useState(false);
   const messagesEndRef = useRef(null);
+  const langMenuRef = useRef(null);
 
-  // Auto-scroll to latest message
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, isLoading, latestClassification, scrollToBottom]);
 
-  // Initial greeting
   useEffect(() => {
-    const greeting = `Namaste! 🙏 Welcome to LegalAid, your trusted guide through legal processes in India.
-
-I'm here to help you understand your rights, gather relevant information about your situation, and prepare formal documents if needed. Whether it's a tenant dispute, labor issue, or consumer problem, we'll work through this together in plain language.
-
-**Important:** This tool provides general legal information, not professional legal advice. Always consult with a qualified lawyer before taking legal action.
-
-Please describe your legal situation in your own words. What brings you here today?`;
-
     setMessages([
       {
-        id: 1,
-        text: greeting,
+        id: nextId(),
+        text: `Welcome to **LegalAId Domain Classifier Test Bench**.\n\nEnter any legal case query or description to test the live model classification, accuracy, and confidence scores across legal domains (**tenant**, **labor**, **consumer**).`,
         isUser: false,
         timestamp: new Date(),
+        showDisclaimer: true,
       },
     ]);
-    setStage('intro');
   }, []);
 
-  // Handle sending messages
-  const handleSendMessage = async () => {
-    if (!input.trim()) return;
-
-    // Add user message
-    const userMessage = {
-      id: messages.length + 1,
-      text: input,
-      isUser: true,
-      timestamp: new Date(),
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (langMenuRef.current && !langMenuRef.current.contains(e.target)) {
+        setLangMenuOpen(false);
+      }
     };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-    setMessages(prev => [...prev, userMessage]);
+  const addBotMessage = (text, extra = {}) => {
+    setMessages((prev) => [
+      ...prev,
+      { id: nextId(), text, isUser: false, timestamp: new Date(), ...extra },
+    ]);
+  };
+
+  const addUserMessage = (text) => {
+    setMessages((prev) => [
+      ...prev,
+      { id: nextId(), text, isUser: true, timestamp: new Date() },
+    ]);
+  };
+
+  const submitMessage = async (text) => {
+    const trimmed = text.trim();
+    if (!trimmed || isLoading) return;
+
+    addUserMessage(trimmed);
     setInput('');
-
-    // Simulate API call with loading state
     setIsLoading(true);
+    setLatestClassification(null);
 
-    // Simulate delay
-    setTimeout(() => {
-      simulateResponse(input);
+    const startTime = performance.now();
+
+    try {
+      const responseData = await classifyDomain(trimmed, 3);
+      const predictions = Array.isArray(responseData) ? responseData : [responseData];
+      const latency = (performance.now() - startTime).toFixed(0);
+
+      const topPred = predictions[0] || { domain: 'Unknown', confidence: 0 };
+      setLatestClassification({
+        predictions,
+        topPred,
+        latencyMs: latency,
+        rawText: trimmed,
+      });
+
+      addBotMessage(
+        `**Model Classification Result:**\n• **Predicted Domain:** \`${topPred.domain.toUpperCase()}\`\n• **Confidence Score:** \`${(topPred.confidence * 100).toFixed(2)}%\`\n• **Inference Latency:** \`${latency}ms\``
+      );
+    } catch (err) {
+      addBotMessage(
+        `❌ **Classification Error:** ${err.message || 'Could not connect to FastAPI server at http://localhost:8000'}`
+      );
+    } finally {
       setIsLoading(false);
-    }, 1500);
-  };
-
-  // Simulate bot responses based on conversation flow
-  const simulateResponse = (userInput) => {
-    let botResponse = '';
-    let newStage = stage;
-    let newDomain = domain;
-    let confidence = domainConfidence;
-    let flags = confidenceFlags;
-
-    if (stage === 'intro') {
-      // Simulate domain classification
-      setIsLoading(true);
-
-      setTimeout(() => {
-        // Mock domain classification result
-        newDomain = 'tenant';
-        confidence = 0.76;
-        newStage = 'questioning';
-        setDomain(newDomain);
-        setDomainConfidence(confidence);
-        setStage(newStage);
-
-        botResponse = `I understand. This sounds like a **tenant dispute** regarding your security deposit. I've noted this, and now I'll ask some clarifying questions to better understand your situation and gather the information we need.
-
-Let me ask you:
-
-**When did you vacate the premises?**
-This helps establish the timeline for deposit return.`;
-
-        const botMessage = {
-          id: messages.length + 2,
-          text: botResponse,
-          isUser: false,
-          timestamp: new Date(),
-        };
-
-        setMessages(prev => [...prev, botMessage]);
-        setIsLoading(false);
-      }, 1200);
-
-      return;
-    }
-
-    if (stage === 'questioning') {
-      // Progress to next stage after sufficient info
-      newStage = 'extracted';
-      setStage(newStage);
-
-      botResponse = `Thank you for that information. Based on what you've shared, here's what I understand:
-
-📋 **Your Case Summary:**
-- Domain: Tenant Dispute
-- Issue: Landlord has not refunded security deposit after vacating
-- Deposit Amount: Around ₹50,000 (from context)
-- Months since vacancy: ~3 weeks
-- Deductions: Not itemized or not provided
-
-I've identified what we need to strengthen your case. Let me show you what rights you have under the law.`;
-
-      const botMessage = {
-        id: messages.length + 2,
-        text: botResponse,
-        isUser: false,
-        timestamp: new Date(),
-      };
-
-      setMessages(prev => [...prev, botMessage]);
-
-      // Add confidence flags
-      const newFlags = [
-        {
-          field: 'Written Lease Agreement',
-          message: 'Do you have a copy of your lease agreement showing the deposit amount? This is crucial evidence.',
-        },
-        {
-          field: 'Deposit Receipt',
-          message: 'A receipt or bank transaction showing you paid the deposit helps establish proof of payment.',
-        },
-        {
-          field: 'Exit Inspection Report',
-          message: 'Photos or a documented inspection of the property condition at the time of vacancy strengthen your claim.',
-        },
-      ];
-
-      setConfidenceFlags(newFlags);
-      setShowRights(true);
-
-      return;
-    }
-
-    if (stage === 'extracted') {
-      newStage = 'results';
-      setStage(newStage);
-
-      botResponse = `Perfect! I've prepared a formal **Notice of Demand** that you can send to your landlord. This is a legal document requesting the return of your security deposit.
-
-The notice is based on:
-- Tamil Nadu Regulation of Rights and Responsibilities of Landlords and Tenants Act, 2017
-- Section 11 (Security Deposit provisions)
-- Your situation and the evidence you've gathered
-
-You can download and send this via registered post or email with read receipt to maintain a paper trail.`;
-
-      const botMessage = {
-        id: messages.length + 2,
-        text: botResponse,
-        isUser: false,
-        timestamp: new Date(),
-      };
-
-      setMessages(prev => [...prev, botMessage]);
-      setShowPdf(true);
-
-      return;
-    }
-
-    if (stage === 'results') {
-      botResponse = `Is there anything else you'd like to know about your case? I can:
-- Answer questions about tenant rights
-- Help you understand the legal process
-- Provide guidance on next steps if the landlord doesn't respond`;
-
-      const botMessage = {
-        id: messages.length + 2,
-        text: botResponse,
-        isUser: false,
-        timestamp: new Date(),
-      };
-
-      setMessages(prev => [...prev, botMessage]);
-      return;
     }
   };
 
-  // Quick reply chips (for specific questions)
-  const QuickReplies = ({ options, onSelect }) => (
-    <div className="flex flex-wrap gap-2 mb-4">
-      {options.map((option, idx) => (
-        <button
-          key={idx}
-          onClick={() => onSelect(option)}
-          className="px-4 py-2 bg-cream-100 text-navy-900 border border-gold-500 rounded-full text-sm font-medium hover:bg-gold-500 hover:text-white transition-colors"
-        >
-          {option}
-        </button>
-      ))}
-    </div>
-  );
+  const handleSend = () => submitMessage(input);
 
   return (
-    <div className="flex flex-col h-screen bg-cream-50 safe-area-inset">
-      {/* Header */}
-      <header className="bg-navy-900 border-b-4 border-gold-500 px-4 py-4 shadow-md">
-        <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="text-gold-500"
-            >
-              <path
-                d="M12 2L2 8v10c0 8 10 14 10 14s10-6 10-14V8l-10-6z"
-                stroke="currentColor"
-                strokeWidth="2"
-                fill="none"
-              />
-              <path
-                d="M12 12l3-3m0 6l-3-3m0 0l-3-3m6 3l-3 3"
-                stroke="currentColor"
-                strokeWidth="2"
-              />
-            </svg>
-            <h1 className="font-serif-display text-2xl text-white">LegalAid</h1>
-          </div>
-
-          {/* Language toggle placeholder */}
-          <button className="text-white hover:text-gold-500 transition-colors text-sm font-medium">
-            EN | हिन्दी
+    <div className="flex flex-col h-full bg-cream-50">
+      {/* Language selector (floating) */}
+      <div className="flex justify-end px-4 pt-2 pb-0 flex-shrink-0">
+        <div className="relative" ref={langMenuRef}>
+          <button
+            type="button"
+            onClick={() => setLangMenuOpen((o) => !o)}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-navy-800 hover:text-gold-600 hover:bg-cream-200 transition-colors min-h-[40px] text-sm font-medium border border-navy-900/10"
+            aria-haspopup="listbox"
+            aria-expanded={langMenuOpen}
+            aria-label="Change language"
+          >
+            <Languages size={18} aria-hidden />
+            <span>{language}</span>
+            <ChevronDown size={14} aria-hidden />
           </button>
-        </div>
-      </header>
 
-      {/* Disclaimer banner */}
-      <div className="bg-blue-50 border-b border-blue-200 px-4 py-2">
-        <div className="max-w-2xl mx-auto flex items-start gap-2">
-          <Info size={16} className="text-blue-600 flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-blue-900">
-            <strong>Disclaimer:</strong> This is not a substitute for professional legal advice. Always consult a qualified lawyer.
-          </p>
+          {langMenuOpen && (
+            <ul
+              role="listbox"
+              className="absolute end-0 top-full mt-1 w-40 bg-cream-100 border border-gold-500/30 rounded-lg shadow-xl overflow-hidden z-20"
+            >
+              {LANGUAGES.map((lang) => (
+                <li key={lang}>
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={language === lang}
+                    onClick={() => {
+                      setLanguage(lang);
+                      setLangMenuOpen(false);
+                    }}
+                    className={`w-full text-start px-4 py-3 text-sm min-h-[44px] transition-colors ${
+                      language === lang
+                        ? 'bg-gold-500/15 text-navy-900 font-semibold'
+                        : 'text-navy-800 hover:bg-cream-200'
+                    }`}
+                  >
+                    {lang}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
 
-      {/* Main chat area */}
-      <div className="flex-1 overflow-y-auto px-4 py-4">
+      {/* Chat area */}
+      <main className="flex-1 overflow-y-auto px-4 py-5">
         <div className="max-w-2xl mx-auto">
-          {/* Domain badge - show once classified */}
-          {domain && (
-            <DomainBadge domain={domain} confidence={domainConfidence} />
+          {latestClassification && (
+            <DomainBadge
+              domain={latestClassification.topPred.domain}
+              confidence={latestClassification.topPred.confidence}
+            />
           )}
 
-          {/* Messages */}
-          {messages.map(msg => (
+          {messages.map((msg) => (
             <MessageBubble
               key={msg.id}
               message={msg.text}
               isUser={msg.isUser}
               timestamp={msg.timestamp}
+              showDisclaimer={msg.showDisclaimer}
             />
           ))}
 
-          {/* Loading indicator */}
           {isLoading && (
-            <LoadingIndicator
-              variant="gavel"
-              message={
-                stage === 'intro'
-                  ? 'Analyzing your case...'
-                  : stage === 'questioning'
-                    ? 'Processing information...'
-                    : 'Preparing your document...'
-              }
-            />
+            <LoadingIndicator variant="gavel" message="Evaluating Model Classification..." />
           )}
 
-          {/* Confidence flags card */}
-          {confidenceFlags.length > 0 && (
-            <ConfidenceFlagsCard flags={confidenceFlags} isOpen={false} />
-          )}
+          {latestClassification && Array.isArray(latestClassification.predictions) && !isLoading && (
+            <div className="bg-white border-2 border-gold-500/60 rounded-xl shadow-lg p-5 mb-5 space-y-4">
+              <div className="flex items-center justify-between border-b pb-3">
+                <div className="flex items-center gap-2">
+                  <Cpu size={24} className="text-gold-600" />
+                  <h3 className="font-serif text-lg font-bold text-navy-900">
+                    Live Model Classification Performance
+                  </h3>
+                </div>
+                <span className="text-xs bg-navy-900 text-gold-500 px-2.5 py-1 rounded-full font-mono">
+                  {latestClassification.latencyMs} ms
+                </span>
+              </div>
 
-          {/* Rights explanation */}
-          {showRights && (
-            <RightsExplanationCard
-              issue="Security Deposit Withholding"
-              summary="Under Tamil Nadu law, landlords must return security deposits within one month of you vacating the premises. If they withhold your deposit, you have clear legal rights to demand its return, even without deductions (unless they follow strict procedures for itemizing deductions)."
-              sections={[
-                {
-                  act: 'Tamil Nadu Regulation of Rights and Responsibilities of Landlords and Tenants Act, 2017',
-                  section: 'Section 11',
-                  title: 'Security Deposit',
-                  text_summary:
-                    'The security deposit is to be refunded to the tenant within one month after vacation of the premises, after making due deduction of any liability of the tenant. The landlord must provide an itemized list of any deductions.',
-                  source_url: 'https://indiankanoon.org/doc/182653321/',
-                },
-              ]}
-              notes="This rule is specifically based on Tamil Nadu law. For other states, different provisions may apply."
-            />
-          )}
+              <div className="flex items-center justify-between bg-cream-100 p-3.5 rounded-lg border border-gold-500/30">
+                <div>
+                  <p className="text-xs text-navy-700 font-medium uppercase tracking-wider">Top Predicted Domain</p>
+                  <p className="text-xl font-serif font-bold text-navy-900 capitalize mt-0.5">
+                    {latestClassification.topPred.domain}
+                  </p>
+                </div>
+                <div className="text-end">
+                  <p className="text-xs text-navy-700 font-medium uppercase tracking-wider">Confidence Score</p>
+                  <p className="text-2xl font-bold text-gold-600 font-mono">
+                    {(latestClassification.topPred.confidence * 100).toFixed(1)}%
+                  </p>
+                </div>
+              </div>
 
-          {/* PDF download card */}
-          {showPdf && (
-            <PdfDownloadButton
-              documentTitle="Notice of Demand - Security Deposit"
-              documentType="notice"
-              onDownload={() => alert('PDF would download')}
-              onEdit={() => alert('Edit mode would open')}
-            />
+              <div>
+                <p className="text-xs font-semibold text-navy-800 uppercase tracking-wider mb-2">
+                  Domain Probabilities Breakdown (Top-K)
+                </p>
+                <div className="space-y-2.5">
+                  {latestClassification.predictions.map((pred, i) => {
+                    const pct = (pred.confidence * 100).toFixed(1);
+                    return (
+                      <div key={i} className="space-y-1">
+                        <div className="flex justify-between text-sm font-medium text-navy-900">
+                          <span className="capitalize">{pred.domain}</span>
+                          <span className="font-mono text-gold-700 font-bold">{pct}%</span>
+                        </div>
+                        <div className="w-full bg-cream-200 h-2.5 rounded-full overflow-hidden">
+                          <div
+                            className="bg-gold-500 h-full rounded-full transition-all duration-500"
+                            style={{ width: `${Math.max(pct, 3)}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-navy-900/10">
+                <button
+                  type="button"
+                  onClick={() => setShowJson((s) => !s)}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-navy-700 hover:text-gold-700 transition-colors"
+                >
+                  <Code size={14} />
+                  <span>{showJson ? 'Hide Raw API JSON Response' : 'Show Raw API JSON Response'}</span>
+                </button>
+
+                {showJson && (
+                  <pre className="mt-3 p-3 bg-navy-900 text-cream-100 text-xs font-mono rounded-lg overflow-x-auto">
+                    {JSON.stringify(latestClassification.predictions, null, 2)}
+                  </pre>
+                )}
+              </div>
+            </div>
           )}
 
           <div ref={messagesEndRef} />
         </div>
-      </div>
+      </main>
 
-      {/* Input area */}
-      <div className="bg-white border-t border-gray-200 px-4 py-4 shadow-lg">
+      {/* Input bar */}
+      <footer className="bg-cream-100 border-t-2 border-gold-500/30 px-4 py-4 shadow-lg flex-shrink-0">
         <div className="max-w-2xl mx-auto">
           <div className="flex gap-2 items-end">
             <input
               type="text"
               value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyPress={e => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
-              placeholder="Type your message... (or press Enter)"
-              className="flex-1 px-4 py-3 bg-cream-100 text-navy-900 rounded-lg border border-gray-300 focus:outline-none focus:border-gold-500 focus:ring-2 focus:ring-gold-500 focus:ring-opacity-20 placeholder-gray-600"
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              placeholder="Describe your situation..."
+              className="flex-1 px-4 py-3.5 bg-cream-50 text-navy-900 text-base rounded-xl border-2 border-navy-900/15 focus:outline-none focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 placeholder-navy-700/50 min-h-[48px]"
+              aria-label="Message input"
             />
 
             <button
-              className="p-3 text-gray-400 hover:text-gray-600 transition-colors"
+              type="button"
+              className="p-3 text-navy-700/50 hover:text-navy-800 transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center"
               title="Voice input (coming soon)"
+              aria-label="Voice input (coming soon)"
+              disabled
             >
-              <Mic size={20} />
+              <Mic size={22} aria-hidden />
             </button>
 
             <button
-              onClick={handleSendMessage}
+              type="button"
+              onClick={handleSend}
               disabled={!input.trim() || isLoading}
-              className="p-3 bg-gold-500 text-white rounded-lg hover:bg-gold-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              title="Send message"
+              className="p-3 bg-gold-500 text-white rounded-xl hover:bg-gold-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center"
+              aria-label="Send message"
             >
-              <Send size={20} />
+              <Send size={22} aria-hidden />
             </button>
           </div>
 
-          {/* Helper text */}
-          <p className="text-xs text-gray-600 mt-2 leading-relaxed">
-            💡 Tip: Be as detailed as possible about your situation. Share dates, amounts, and any correspondence you have.
+          <p className="text-sm text-navy-700/60 mt-2 leading-relaxed">
+            Share dates, amounts, and any correspondence you have — the more detail, the better.
           </p>
         </div>
-      </div>
+      </footer>
     </div>
   );
 }

@@ -2,69 +2,65 @@ import React from 'react';
 import { ChevronDown, AlertTriangle } from 'lucide-react';
 
 /**
- * ConfidenceFlagsCard Component
- * Shows missing evidence/confidence flags with a collapsible interface
- * Key differentiator: helps users strengthen their case
+ * Collapsible "Strengthen your case" panel — missing-evidence flags
  */
-export default function ConfidenceFlagsCard({ flags = [], isOpen: initialOpen = false }) {
-  const [isOpen, setIsOpen] = React.useState(initialOpen);
+export default function ConfidenceFlagsCard({ flags = [], defaultOpen = true }) {
+  const [isOpen, setIsOpen] = React.useState(defaultOpen);
 
-  if (!flags || flags.length === 0) {
-    return null;
-  }
+  if (!flags?.length) return null;
 
   return (
-    <div className="bg-white border-l-4 border-gold-500 rounded-lg overflow-hidden mb-4 shadow-sm">
-      {/* Header */}
+    <div className="bg-cream-100 border-2 border-gold-500/50 rounded-xl overflow-hidden mb-5 shadow-md">
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 flex items-center justify-between hover:bg-cream-100 transition-colors"
+        type="button"
+        onClick={() => setIsOpen((o) => !o)}
+        className="w-full px-5 py-4 flex items-center justify-between hover:bg-cream-200/60 transition-colors min-h-[44px]"
+        aria-expanded={isOpen}
       >
-        <div className="flex items-center gap-3">
-          <AlertTriangle size={20} className="text-gold-500" />
-          <div className="text-left">
-            <h3 className="font-semibold text-navy-900 text-sm">
+        <div className="flex items-center gap-3 text-left">
+          <div className="p-2 rounded-lg bg-gold-500/15">
+            <AlertTriangle size={22} className="text-gold-600" aria-hidden />
+          </div>
+          <div>
+            <h3 className="font-serif-display text-lg text-navy-900">
               Strengthen your case
             </h3>
-            <p className="text-xs text-gray-600 mt-0.5">
-              {flags.length} evidence item{flags.length !== 1 ? 's' : ''} to gather
+            <p className="text-sm text-navy-700/80 mt-0.5">
+              {flags.length} item{flags.length !== 1 ? 's' : ''} to gather for stronger evidence
             </p>
           </div>
         </div>
         <ChevronDown
-          size={20}
-          className={`text-gold-500 transition-transform ${
+          size={22}
+          className={`text-gold-600 flex-shrink-0 transition-transform duration-200 ${
             isOpen ? 'rotate-180' : ''
           }`}
+          aria-hidden
         />
       </button>
 
-      {/* Content - Only show if expanded */}
       {isOpen && (
-        <div className="border-t border-gray-200 px-4 py-3 bg-cream-50 space-y-3">
+        <div className="border-t border-gold-500/20 px-5 py-4 bg-cream-50 space-y-4">
           {flags.map((flag, idx) => (
-            <div key={idx} className="flex gap-3">
+            <div key={idx} className="flex gap-3 items-start">
               <AlertTriangle
-                size={18}
-                className="text-gold-500 flex-shrink-0 mt-0.5"
+                size={20}
+                className="text-gold-600 flex-shrink-0 mt-0.5"
+                aria-hidden
               />
               <div>
-                <p className="text-sm font-medium text-navy-900">
-                  {flag.field}
-                </p>
-                <p className="text-xs text-gray-700 mt-1 leading-relaxed">
+                <p className="text-base font-semibold text-navy-900">{flag.field}</p>
+                <p className="text-sm text-navy-800/90 mt-1 leading-relaxed">
                   {flag.message}
                 </p>
               </div>
             </div>
           ))}
 
-          {/* Helper text */}
-          <div className="mt-4 pt-3 border-t border-gray-200">
-            <p className="text-xs text-gray-600 italic">
-              💡 Gathering these details will make your case much stronger when seeking legal action.
-            </p>
-          </div>
+          <p className="text-sm text-navy-700/70 pt-2 border-t border-gold-500/15 italic leading-relaxed">
+            Gathering these documents before sending your notice will make your position
+            significantly stronger.
+          </p>
         </div>
       )}
     </div>
