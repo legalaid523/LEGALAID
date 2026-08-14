@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Languages, Send, Mic, ChevronDown } from 'lucide-react';
+import { Languages, Send, Mic, ChevronDown, RotateCcw } from 'lucide-react';
 import MessageBubble from './MessageBubble';
 import LoadingIndicator from './LoadingIndicator';
 import DomainBadge from './DomainBadge';
@@ -47,6 +47,34 @@ export default function ChatWindow() {
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
+
+  // Reset chat to a fresh state — new session, clear messages/results
+  const resetChat = useCallback(async () => {
+    setMessages([
+      {
+        id: nextId(),
+        textKey: 'welcome',
+        text: t('welcome', lang),
+        isUser: false,
+        timestamp: new Date(),
+        showDisclaimer: true,
+      },
+    ]);
+    setInput('');
+    setIsLoading(false);
+    setDomainInfo(null);
+    setMatchResult(null);
+    setConversationDone(false);
+    setPdfLoading(false);
+
+    try {
+      const { session_id } = await startSession();
+      setSessionId(session_id);
+    } catch {
+      console.warn('Could not start new session');
+      setSessionId(null);
+    }
+  }, [lang]);
 
   useEffect(() => {
     scrollToBottom();
@@ -116,7 +144,26 @@ export default function ChatWindow() {
 
   const submitMessage = async (text) => {
     const trimmed = text.trim();
-    if (!trimmed || isLoading || conversationDone) return;
+    if (!trimmed || isLoading) return;
+
+    // If the previous conversation was completed, start a fresh session
+    // but keep all prior messages visible for context
+    if (conversationDone) {
+      setConversationDone(false);
+      setDomainInfo(null);
+      setMatchResult(null);
+
+      // Add a visual separator for the new question
+      addBotMessage(`---\n\n✨ **${t('newQuestion', lang)}**\n${t('newQuestionHint', lang)}`);
+
+      try {
+        const { session_id } = await startSession();
+        setSessionId(session_id);
+      } catch {
+        console.warn('Could not start new session');
+        setSessionId(null);
+      }
+    }
 
     addUserMessage(trimmed);
     setInput('');
@@ -185,8 +232,21 @@ export default function ChatWindow() {
 
   return (
     <div className="flex flex-col h-full bg-cream-50">
-      {/* Language selector (floating) */}
-      <div className="flex justify-end px-4 pt-2 pb-0 flex-shrink-0">
+      {/* Top bar: refresh + language selector */}
+      <div className="flex justify-between items-center px-4 pt-2 pb-0 flex-shrink-0">
+        {/* Refresh / New Chat button */}
+        <button
+          type="button"
+          onClick={resetChat}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg text-navy-800 hover:text-gold-600 hover:bg-cream-200 transition-colors min-h-[40px] text-sm font-medium border border-navy-900/10"
+          aria-label={t('newChat', lang)}
+          title={t('newChat', lang)}
+        >
+          <RotateCcw size={18} aria-hidden />
+          <span>{t('newChat', lang)}</span>
+        </button>
+
+        {/* Language selector */}
         <div className="relative" ref={langMenuRef}>
           <button
             type="button"
@@ -328,8 +388,7 @@ export default function ChatWindow() {
                   handleSend();
                 }
               }}
-              placeholder={conversationDone ? t('conversationComplete', lang) : t('inputPlaceholder', lang)}
-              disabled={conversationDone}
+              placeholder={conversationDone ? t('askAnotherQuestion', lang) : t('inputPlaceholder', lang)}
               className="flex-1 px-4 py-3.5 bg-cream-50 text-navy-900 text-base rounded-xl border-2 border-navy-900/15 focus:outline-none focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 placeholder-navy-700/50 min-h-[48px] disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label={t('sendMessage', lang)}
             />
@@ -347,7 +406,7 @@ export default function ChatWindow() {
             <button
               type="button"
               onClick={handleSend}
-              disabled={!input.trim() || isLoading || conversationDone}
+              disabled={!input.trim() || isLoading}
               className="p-3 bg-gold-500 text-white rounded-xl hover:bg-gold-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center"
               aria-label={t('sendMessage', lang)}
             >

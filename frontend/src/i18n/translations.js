@@ -191,6 +191,31 @@ const translations = {
     hi: 'भाषा बदलें',
     hinglish: 'Language change karein',
   },
+
+  // ── New chat / multi-question ─────────────────────────────────────
+  newChat: {
+    en: 'New Chat',
+    hi: 'नई चैट',
+    hinglish: 'Naya Chat',
+  },
+
+  askAnotherQuestion: {
+    en: 'Ask another legal question...',
+    hi: 'एक और कानूनी सवाल पूछें...',
+    hinglish: 'Ek aur legal question poochein...',
+  },
+
+  newQuestion: {
+    en: 'New Question',
+    hi: 'नया सवाल',
+    hinglish: 'Naya Question',
+  },
+
+  newQuestionHint: {
+    en: 'Starting a fresh analysis — describe your next legal issue below.',
+    hi: 'एक नया विश्लेषण शुरू हो रहा है — अपनी अगली कानूनी समस्या नीचे बताएं।',
+    hinglish: 'Fresh analysis start ho raha hai — apni next legal problem neeche batayein.',
+  },
 };
 
 /**
