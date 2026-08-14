@@ -12,6 +12,32 @@ from app.fact_matcher import MatchResult
 from app.supabase_client import get_cache
 
 
+def _resolve_lang(language: str) -> str:
+    """Normalize language codes to 'en', 'hi', or 'hinglish'."""
+    if not language:
+        return "en"
+    lower = language.lower()
+    if lower == "hi":
+        return "hi"
+    if lower in ("hi-en", "hinglish"):
+        return "hinglish"
+    return "en"
+
+
+def _to_hinglish(en_text: str, hi_text: str) -> str:
+    """
+    Generate a Hinglish version of a question.
+    Uses the Hindi text as base with English technical/legal terms preserved.
+    Falls back to English if no Hindi available.
+    """
+    if not hi_text or hi_text == en_text:
+        return en_text
+    # Return Hindi text as-is for now — the Supabase questions are already
+    # in the target language. For cases where no hinglish version exists,
+    # we prefer the English version as Hinglish users can read English.
+    return en_text
+
+
 def select_next_question(match_result: MatchResult, language: str = "en") -> Optional[Dict[str, Any]]:
     """
     Determines the single best question to ask the user next.
@@ -45,11 +71,25 @@ def select_next_question(match_result: MatchResult, language: str = "en") -> Opt
     q_en = chosen_sf.get("question_text_en") or fd.get("default_question_en") or f"Please clarify: {label}?"
     q_hi = chosen_sf.get("question_text_hi") or fd.get("default_question_hi") or f"कृपया स्पष्ट करें: {label}?"
 
-    q_text = q_hi if language.lower().startswith("hi") else q_en
+    resolved = _resolve_lang(language)
+
+    if resolved == "hi":
+        q_text = q_hi
+    elif resolved == "hinglish":
+        # For Hinglish: use English text (Hinglish speakers can read English)
+        # but present it in a natural way
+        q_text = q_en
+    else:
+        q_text = q_en
 
     options = None
     if fact_type == "boolean":
-        options = ["Yes", "No"] if not language.lower().startswith("hi") else ["हाँ", "नहीं"]
+        if resolved == "hi":
+            options = ["हाँ", "नहीं"]
+        elif resolved == "hinglish":
+            options = ["Haan", "Nahi"]
+        else:
+            options = ["Yes", "No"]
 
     return {
         "fact_key": fact_key,

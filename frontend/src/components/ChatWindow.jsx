@@ -1,17 +1,18 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Scale, Languages, Send, Mic, ChevronDown } from 'lucide-react';
+import { Languages, Send, Mic, ChevronDown, RotateCcw } from 'lucide-react';
 import MessageBubble from './MessageBubble';
 import LoadingIndicator from './LoadingIndicator';
 import DomainBadge from './DomainBadge';
 import RightsExplanationCard from './RightsExplanationCard';
 import ConfidenceFlagsCard from './ConfidenceFlagsCard';
 import PdfDownloadButton from './PdfDownloadButton';
-import { startSession, sendMessage } from '../api/legalaidApi';
+import { startSession, sendMessage, generatePdf } from '../api/legalaidApi';
+import { t } from '../i18n/translations';
 
 const LANGUAGES = [
   { label: 'English', code: 'en' },
   { label: 'Hindi', code: 'hi' },
-  { label: 'Hinglish', code: 'en' },
+  { label: 'Hinglish', code: 'hi-en' },
 ];
 
 let messageId = 1;
@@ -37,12 +38,43 @@ export default function ChatWindow() {
   const [domainInfo, setDomainInfo] = useState(null); // { domain_id, confidence }
   const [matchResult, setMatchResult] = useState(null); // full match data when status=matched
   const [conversationDone, setConversationDone] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const messagesEndRef = useRef(null);
   const langMenuRef = useRef(null);
+
+  const lang = language.code; // shorthand for translations
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
+
+  // Reset chat to a fresh state — new session, clear messages/results
+  const resetChat = useCallback(async () => {
+    setMessages([
+      {
+        id: nextId(),
+        textKey: 'welcome',
+        text: t('welcome', lang),
+        isUser: false,
+        timestamp: new Date(),
+        showDisclaimer: true,
+      },
+    ]);
+    setInput('');
+    setIsLoading(false);
+    setDomainInfo(null);
+    setMatchResult(null);
+    setConversationDone(false);
+    setPdfLoading(false);
+
+    try {
+      const { session_id } = await startSession();
+      setSessionId(session_id);
+    } catch {
+      console.warn('Could not start new session');
+      setSessionId(null);
+    }
+  }, [lang]);
 
   useEffect(() => {
     scrollToBottom();
@@ -64,13 +96,26 @@ export default function ChatWindow() {
     setMessages([
       {
         id: nextId(),
-        text: `Welcome to **LegalAId** — your intelligent legal rights assistant.\n\nDescribe your legal issue in detail: what happened, when, and who is involved. I will classify your case, gather the relevant facts, and identify the applicable Indian laws for your situation.\n\nYou can speak in **English**, **Hindi**, or **Hinglish**.`,
+        textKey: 'welcome',
+        text: t('welcome', 'en'),
         isUser: false,
         timestamp: new Date(),
         showDisclaimer: true,
       },
     ]);
   }, []);
+
+  // Re-translate messages when language changes
+  useEffect(() => {
+    setMessages((prev) =>
+      prev.map((msg) => {
+        if (msg.textKey) {
+          return { ...msg, text: t(msg.textKey, lang) };
+        }
+        return msg;
+      })
+    );
+  }, [lang]);
 
   // Close language menu on outside click
   useEffect(() => {
@@ -99,7 +144,26 @@ export default function ChatWindow() {
 
   const submitMessage = async (text) => {
     const trimmed = text.trim();
-    if (!trimmed || isLoading || conversationDone) return;
+    if (!trimmed || isLoading) return;
+
+    // If the previous conversation was completed, start a fresh session
+    // but keep all prior messages visible for context
+    if (conversationDone) {
+      setConversationDone(false);
+      setDomainInfo(null);
+      setMatchResult(null);
+
+      // Add a visual separator for the new question
+      addBotMessage(`---\n\n✨ **${t('newQuestion', lang)}**\n${t('newQuestionHint', lang)}`);
+
+      try {
+        const { session_id } = await startSession();
+        setSessionId(session_id);
+      } catch {
+        console.warn('Could not start new session');
+        setSessionId(null);
+      }
+    }
 
     addUserMessage(trimmed);
     setInput('');
@@ -145,17 +209,15 @@ export default function ChatWindow() {
           : '';
 
         addBotMessage(
-          `**Case Analysis Complete** ✅\n\n**Domain:** ${domainLabel} Dispute\n**Issue:** ${issueLabel}\n**Match Score:** ${((section?.score || 0) * 100).toFixed(0)}%\n\n**Extracted Facts:**\n${factSummary}\n\nBelow you will find your applicable legal rights, recommended evidence to strengthen your case, and a downloadable legal notice.`
+          `**${t('caseAnalysisComplete', lang)}** ✅\n\n**${t('domainLabel', lang)}:** ${domainLabel} ${t('disputeLabel', lang)}\n**${t('issueLabel', lang)}:** ${issueLabel}\n**${t('matchScoreLabel', lang)}:** ${((section?.score || 0) * 100).toFixed(0)}%\n\n**${t('extractedFactsLabel', lang)}:**\n${factSummary}\n\n${t('caseResultSuffix', lang)}`
         );
       } else if (result.status === 'no_match') {
         setConversationDone(true);
-        addBotMessage(
-          `I was unable to match your situation to a specific tracked legal section. This doesn't mean you don't have rights — it means your case may require professional legal counsel.\n\n**Suggestions:**\n• Try describing your situation with more specific details\n• Contact your nearest Legal Aid office\n• You can start a new conversation to try again`
-        );
+        addBotMessage(t('noMatchMessage', lang));
       }
     } catch (err) {
       addBotMessage(
-        `❌ **Error:** ${err.message || 'Could not connect to the backend server. Make sure the FastAPI server is running.'}`
+        `❌ **${t('errorPrefix', lang)}:** ${err.message || t('connectionError', lang)}`
       );
     } finally {
       setIsLoading(false);
@@ -170,8 +232,21 @@ export default function ChatWindow() {
 
   return (
     <div className="flex flex-col h-full bg-cream-50">
-      {/* Language selector (floating) */}
-      <div className="flex justify-end px-4 pt-2 pb-0 flex-shrink-0">
+      {/* Top bar: refresh + language selector */}
+      <div className="flex justify-between items-center px-4 pt-2 pb-0 flex-shrink-0">
+        {/* Refresh / New Chat button */}
+        <button
+          type="button"
+          onClick={resetChat}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg text-navy-800 hover:text-gold-600 hover:bg-cream-200 transition-colors min-h-[40px] text-sm font-medium border border-navy-900/10"
+          aria-label={t('newChat', lang)}
+          title={t('newChat', lang)}
+        >
+          <RotateCcw size={18} aria-hidden />
+          <span>{t('newChat', lang)}</span>
+        </button>
+
+        {/* Language selector */}
         <div className="relative" ref={langMenuRef}>
           <button
             type="button"
@@ -179,7 +254,7 @@ export default function ChatWindow() {
             className="flex items-center gap-2 px-3 py-2 rounded-lg text-navy-800 hover:text-gold-600 hover:bg-cream-200 transition-colors min-h-[40px] text-sm font-medium border border-navy-900/10"
             aria-haspopup="listbox"
             aria-expanded={langMenuOpen}
-            aria-label="Change language"
+            aria-label={t('changeLanguage', lang)}
           >
             <Languages size={18} aria-hidden />
             <span>{language.label}</span>
@@ -191,23 +266,23 @@ export default function ChatWindow() {
               role="listbox"
               className="absolute end-0 top-full mt-1 w-40 bg-cream-100 border border-gold-500/30 rounded-lg shadow-xl overflow-hidden z-20"
             >
-              {LANGUAGES.map((lang) => (
-                <li key={lang.label}>
+              {LANGUAGES.map((lng) => (
+                <li key={lng.label}>
                   <button
                     type="button"
                     role="option"
-                    aria-selected={language.label === lang.label}
+                    aria-selected={language.label === lng.label}
                     onClick={() => {
-                      setLanguage(lang);
+                      setLanguage(lng);
                       setLangMenuOpen(false);
                     }}
                     className={`w-full text-start px-4 py-3 text-sm min-h-[44px] transition-colors ${
-                      language.label === lang.label
+                      language.label === lng.label
                         ? 'bg-gold-500/15 text-navy-900 font-semibold'
                         : 'text-navy-800 hover:bg-cream-200'
                     }`}
                   >
-                    {lang.label}
+                    {lng.label}
                   </button>
                 </li>
               ))}
@@ -234,13 +309,14 @@ export default function ChatWindow() {
               isUser={msg.isUser}
               timestamp={msg.timestamp}
               showDisclaimer={msg.showDisclaimer}
+              disclaimerText={t('disclaimer', lang)}
               quickReplies={msg.quickReplies}
               onQuickReply={handleQuickReply}
             />
           ))}
 
           {isLoading && (
-            <LoadingIndicator variant="gavel" message="Analyzing your case..." />
+            <LoadingIndicator variant="gavel" message={t('analyzingCase', lang)} />
           )}
 
           {/* Matched result cards — shown after conversation completes with a match */}
@@ -250,8 +326,8 @@ export default function ChatWindow() {
                 <RightsExplanationCard
                   issue={
                     matchResult.matched_sections?.[0]?.issue
-                      ? `Your Rights — ${matchResult.matched_sections[0].issue.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}`
-                      : 'Your Legal Rights'
+                      ? `${t('yourRightsPrefix', lang)} — ${matchResult.matched_sections[0].issue.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}`
+                      : t('yourLegalRights', lang)
                   }
                   summary={matchResult.matched_sections?.[0]?.notes || ''}
                   sections={matchResult.applicable_laws.map((law) => ({
@@ -259,9 +335,9 @@ export default function ChatWindow() {
                     section: law.section_number,
                     title: law.section_number,
                     text_summary: law.text_summary,
-                    source_url: law.source_url,
                   }))}
-                  notes="State-specific rules may vary. Keep written records of all communication."
+                  notes={t('stateSpecificNote', lang)}
+                  applicableLawsLabel={t('applicableLaws', lang)}
                 />
               )}
 
@@ -269,15 +345,26 @@ export default function ChatWindow() {
                 <ConfidenceFlagsCard
                   flags={matchResult.confidence_flags}
                   defaultOpen
+                  lang={lang}
                 />
               )}
 
               <PdfDownloadButton
-                documentTitle={`Legal Notice — ${
+                documentTitle={`${t('legalNoticePrefix', lang)} — ${
                   matchResult.matched_sections?.[0]?.issue?.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || 'Your Case'
                 }`}
                 documentType="notice"
-                onDownload={() => alert('PDF generation coming soon — this feature is under development.')}
+                isLoading={pdfLoading}
+                onDownload={async () => {
+                  try {
+                    setPdfLoading(true);
+                    await generatePdf(matchResult);
+                  } catch (err) {
+                    alert(`PDF generation failed: ${err.message}`);
+                  } finally {
+                    setPdfLoading(false);
+                  }
+                }}
                 onEdit={() => alert('Edit feature coming soon.')}
               />
             </>
@@ -301,17 +388,16 @@ export default function ChatWindow() {
                   handleSend();
                 }
               }}
-              placeholder={conversationDone ? 'Conversation complete' : 'Describe your situation...'}
-              disabled={conversationDone}
+              placeholder={conversationDone ? t('askAnotherQuestion', lang) : t('inputPlaceholder', lang)}
               className="flex-1 px-4 py-3.5 bg-cream-50 text-navy-900 text-base rounded-xl border-2 border-navy-900/15 focus:outline-none focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 placeholder-navy-700/50 min-h-[48px] disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Message input"
+              aria-label={t('sendMessage', lang)}
             />
 
             <button
               type="button"
               className="p-3 text-navy-700/50 hover:text-navy-800 transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center"
-              title="Voice input (coming soon)"
-              aria-label="Voice input (coming soon)"
+              title={t('voiceInputSoon', lang)}
+              aria-label={t('voiceInputSoon', lang)}
               disabled
             >
               <Mic size={22} aria-hidden />
@@ -320,16 +406,16 @@ export default function ChatWindow() {
             <button
               type="button"
               onClick={handleSend}
-              disabled={!input.trim() || isLoading || conversationDone}
+              disabled={!input.trim() || isLoading}
               className="p-3 bg-gold-500 text-white rounded-xl hover:bg-gold-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center"
-              aria-label="Send message"
+              aria-label={t('sendMessage', lang)}
             >
               <Send size={22} aria-hidden />
             </button>
           </div>
 
           <p className="text-sm text-navy-700/60 mt-2 leading-relaxed">
-            Share dates, amounts, and any correspondence you have — the more detail, the better.
+            {t('inputHint', lang)}
           </p>
         </div>
       </footer>

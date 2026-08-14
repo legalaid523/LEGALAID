@@ -10,6 +10,7 @@ export default function MessageBubble({
   isUser = false,
   timestamp = null,
   showDisclaimer = false,
+  disclaimerText = 'This is not a substitute for professional legal advice.',
   quickReplies = null,
   onQuickReply = null,
 }) {
@@ -75,7 +76,7 @@ export default function MessageBubble({
               aria-hidden
             />
             <p className="text-sm text-navy-800 leading-snug">
-              This is not a substitute for professional legal advice.
+              {disclaimerText}
             </p>
           </div>
         )}

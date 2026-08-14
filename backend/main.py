@@ -5,16 +5,19 @@ FastAPI server for LegalAId backend.
 Exposes the full pipeline (classifier → extraction → matcher → question engine)
 as REST endpoints consumed by the React frontend.
 """
+import io
 import os
 from contextlib import asynccontextmanager
 from typing import Optional, List
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from app.classifier import load_classifier, classify
 from app.conversation import start_conversation, handle_message
+from app.pdf_generator import generate_legal_notice_pdf
 from app.supabase_client import load_cache
 
 
@@ -77,6 +80,33 @@ class ClassifyRequest(BaseModel):
 class ClassifyPrediction(BaseModel):
     domain: str
     confidence: float
+
+
+class MatchedSectionItem(BaseModel):
+    section_id: str | None = None
+    issue: str | None = None
+    notes: str | None = None
+    score: float | None = None
+
+
+class ApplicableLawItem(BaseModel):
+    act: str = ""
+    section_number: str = ""
+    text_summary: str = ""
+
+
+class ConfidenceFlagItem(BaseModel):
+    fact_key: str = ""
+    field: str = ""
+    message: str = ""
+
+
+class GeneratePdfRequest(BaseModel):
+    domain_id: str = ""
+    matched_sections: List[MatchedSectionItem] = []
+    extracted_facts: dict = {}
+    applicable_laws: List[ApplicableLawItem] = []
+    confidence_flags: List[ConfidenceFlagItem] = []
 
 
 # ─── Endpoints ────────────────────────────────────────────────────────────────
@@ -145,3 +175,48 @@ async def api_classify(req: ClassifyRequest):
     except Exception as e:
         print(f"❌ Classify error: {e}")
         raise HTTPException(status_code=500, detail=f"Classification error: {e}")
+
+
+@app.post("/api/generate-pdf")
+async def api_generate_pdf(req: GeneratePdfRequest):
+    """
+    Generate a PDF legal notice / case summary document.
+
+    Accepts the matched case data and returns a downloadable PDF file.
+    """
+    try:
+        print(f"\n📄 [PDF] Generating PDF for domain={req.domain_id}")
+
+        # Convert Pydantic models to plain dicts for the generator
+        matched_sections = [s.model_dump() for s in req.matched_sections]
+        applicable_laws = [l.model_dump() for l in req.applicable_laws]
+        confidence_flags = [f.model_dump() for f in req.confidence_flags]
+
+        pdf_bytes = generate_legal_notice_pdf(
+            domain_id=req.domain_id,
+            matched_sections=matched_sections,
+            extracted_facts=req.extracted_facts,
+            applicable_laws=applicable_laws,
+            confidence_flags=confidence_flags,
+        )
+
+        # Build filename
+        domain_label = (req.domain_id or "case").replace(" ", "_")
+        issue = matched_sections[0].get("issue", "") if matched_sections else ""
+        issue_label = (issue or "summary").replace(" ", "_")
+        filename = f"LegalAId_{domain_label}_{issue_label}.pdf"
+
+        return StreamingResponse(
+            io.BytesIO(pdf_bytes),
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"',
+            },
+        )
+
+    except Exception as e:
+        print(f"❌ PDF generation error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"PDF generation error: {e}")
+
