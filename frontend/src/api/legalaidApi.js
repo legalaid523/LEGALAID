@@ -42,3 +42,48 @@ export async function sendMessage(sessionId, message, language = 'en') {
 
   return response.json();
 }
+
+/**
+ * Generate and download a PDF legal notice from matched case data.
+ * @param {Object} matchResult - The full match result from the chat API
+ * @returns {Promise<void>} Triggers a browser file download
+ */
+export async function generatePdf(matchResult) {
+  const response = await fetch(`${API_BASE_URL}/api/generate-pdf`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      domain_id: matchResult.domain_id || '',
+      matched_sections: matchResult.matched_sections || [],
+      extracted_facts: matchResult.extracted_facts || {},
+      applicable_laws: matchResult.applicable_laws || [],
+      confidence_flags: matchResult.confidence_flags || [],
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.detail || 'Failed to generate PDF');
+  }
+
+  // Get the PDF blob and trigger download
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+
+  // Extract filename from Content-Disposition header or use a default
+  const contentDisposition = response.headers.get('Content-Disposition');
+  let filename = 'LegalAId_case_summary.pdf';
+  if (contentDisposition) {
+    const match = contentDisposition.match(/filename="?(.+?)"?$/);
+    if (match) filename = match[1];
+  }
+
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+}
+

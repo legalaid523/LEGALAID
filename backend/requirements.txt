@@ -6,5 +6,6 @@ pydantic
 google-genai
 groq
 python-multipart
+fpdf2
 
 

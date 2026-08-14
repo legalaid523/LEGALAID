@@ -26,7 +26,6 @@ def _get_applicable_laws(section_id: str) -> list[dict]:
             "act": law.get("act", ""),
             "section_number": law.get("section_number", ""),
             "text_summary": law.get("text_summary", ""),
-            "source_url": law.get("source_url", ""),
         }
         for law in cache.get("applicable_law_sections", [])
         if law.get("section_id") == section_id

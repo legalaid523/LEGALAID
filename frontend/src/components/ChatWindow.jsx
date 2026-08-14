@@ -6,7 +6,7 @@ import DomainBadge from './DomainBadge';
 import RightsExplanationCard from './RightsExplanationCard';
 import ConfidenceFlagsCard from './ConfidenceFlagsCard';
 import PdfDownloadButton from './PdfDownloadButton';
-import { startSession, sendMessage } from '../api/legalaidApi';
+import { startSession, sendMessage, generatePdf } from '../api/legalaidApi';
 
 const LANGUAGES = [
   { label: 'English', code: 'en' },
@@ -37,6 +37,7 @@ export default function ChatWindow() {
   const [domainInfo, setDomainInfo] = useState(null); // { domain_id, confidence }
   const [matchResult, setMatchResult] = useState(null); // full match data when status=matched
   const [conversationDone, setConversationDone] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const messagesEndRef = useRef(null);
   const langMenuRef = useRef(null);
 
@@ -259,7 +260,6 @@ export default function ChatWindow() {
                     section: law.section_number,
                     title: law.section_number,
                     text_summary: law.text_summary,
-                    source_url: law.source_url,
                   }))}
                   notes="State-specific rules may vary. Keep written records of all communication."
                 />
@@ -277,7 +277,17 @@ export default function ChatWindow() {
                   matchResult.matched_sections?.[0]?.issue?.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || 'Your Case'
                 }`}
                 documentType="notice"
-                onDownload={() => alert('PDF generation coming soon — this feature is under development.')}
+                isLoading={pdfLoading}
+                onDownload={async () => {
+                  try {
+                    setPdfLoading(true);
+                    await generatePdf(matchResult);
+                  } catch (err) {
+                    alert(`PDF generation failed: ${err.message}`);
+                  } finally {
+                    setPdfLoading(false);
+                  }
+                }}
                 onEdit={() => alert('Edit feature coming soon.')}
               />
             </>
