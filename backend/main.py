@@ -26,12 +26,12 @@ from app.supabase_client import load_cache
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Load Supabase cache and classifier on startup."""
-    print("🚀 Starting LegalAId backend...")
+    print("Starting LegalAId backend...")
     load_cache()
     load_classifier()
-    print("✅ Backend ready.")
+    print("Backend ready.")
     yield
-    print("👋 Shutting down LegalAId backend.")
+    print("Shutting down LegalAId backend.")
 
 
 app = FastAPI(
@@ -49,12 +49,16 @@ ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:5180",
     "http://127.0.0.1:5180",
+    "http://localhost:5181",
+    "http://127.0.0.1:5181",
+    "http://localhost:5182",
+    "http://127.0.0.1:5182",
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -123,17 +127,16 @@ async def api_start_session():
     return StartSessionResponse(session_id=session_id)
 
 
+from app.demo_llm import handle_message_demo
+
 @app.post("/api/chat")
 async def api_chat(req: ChatRequest):
     """
-    Process one turn of the multi-turn conversation.
-
-    Returns the full pipeline result: classification, extracted facts,
-    next question or matched section with applicable laws.
+    Process one turn of the multi-turn conversation using the Demo LLM orchestrator.
     """
     try:
         print(f"\n📩 [Chat] session={req.session_id} | msg='{req.message}' | lang={req.language}")
-        result = handle_message(
+        result = handle_message_demo(
             session_id=req.session_id,
             user_message=req.message,
             language=req.language,

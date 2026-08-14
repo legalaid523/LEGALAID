@@ -32,10 +32,9 @@ def main():
     q_1 = select_next_question(result_1)
     if q_1:
         print(f"\n👉 Next Question Picked:")
-        print(f"   Fact Key: {q_1.fact_key}")
-        print(f"   Question (EN): {q_1.question_en}")
-        print(f"   Question (HI): {q_1.question_hi}")
-        print(f"   Options: {q_1.options}")
+        print(f"   Fact Key: {q_1.get('fact_key')}")
+        print(f"   Question Text: {q_1.get('question_text')}")
+        print(f"   Options: {q_1.get('options')}")
 
     print("\n" + "=" * 70)
     print("TEST 2: Tenant Security Deposit — Full Match")
@@ -70,9 +69,8 @@ def main():
     q_3 = select_next_question(result_3)
     if q_3:
         print(f"\n👉 Next Question Picked:")
-        print(f"   Fact Key: {q_3.fact_key}")
-        print(f"   Question (EN): {q_3.question_en}")
-        print(f"   Question (HI): {q_3.question_hi}")
+        print(f"   Fact Key: {q_3.get('fact_key')}")
+        print(f"   Question Text: {q_3.get('question_text')}")
 
     print("\n" + "=" * 70)
     print("All matcher & question engine tests completed successfully.")

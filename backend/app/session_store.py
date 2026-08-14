@@ -6,7 +6,7 @@ from typing import Dict, Any, Optional, List
 from supabase import create_client
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 _sb = None
 _in_memory_sessions: Dict[str, Dict[str, Any]] = {}
@@ -34,6 +34,7 @@ def create_session() -> str:
         "last_asked_fact": None,
         "last_question_text": None,
         "status": "in_progress",
+        "history": [],
     }
     _in_memory_sessions[session_id] = record
 
@@ -44,6 +45,8 @@ def create_session() -> str:
                 "session_id": session_id,
                 "extracted_facts": {},
                 "status": "in_progress",
+                # Note: history is not strongly typed in DB unless we added a jsonb column, 
+                # but we will just rely on in_memory_sessions for history for the demo.
             }).execute()
         except Exception:
             pass
@@ -64,55 +67,32 @@ def get_session(session_id: str) -> Optional[dict]:
     return in_mem if in_mem else None
 
 
-def update_session(
-    session_id: str,
-    domain_id: Optional[str] = None,
-    extracted_facts: Optional[dict] = None,
-    target_section_id: Optional[str] = None,
-    matched_section_ids: Optional[List[str]] = None,
-    status: Optional[str] = None,
-    last_asked_fact: Optional[str] = None,
-    last_question_text: Optional[str] = None,
-    **kwargs,
-):
-    updates: dict = {}
-    if domain_id is not None:
-        updates["domain_id"] = domain_id
-    if extracted_facts is not None:
-        updates["extracted_facts"] = extracted_facts
-    if target_section_id is not None:
-        updates["target_section_id"] = target_section_id
-    if matched_section_ids is not None:
-        updates["matched_section_ids"] = matched_section_ids
-    if status is not None:
-        updates["status"] = status
-    if last_asked_fact is not None:
-        updates["last_asked_fact"] = last_asked_fact
-    if last_question_text is not None:
-        updates["last_question_text"] = last_question_text
-    updates.update(kwargs)
-
+def update_session(session_id: str, **kwargs):
+    updates = {}
+    db_updates = {"updated_at": "now()"}
+    
+    # We want to support setting fields to None, so we just iterate over kwargs
+    # Allowed fields: domain_id, extracted_facts, target_section_id, matched_section_ids, status, last_asked_fact, last_question_text
+    allowed_fields = [
+        "domain_id", "extracted_facts", "target_section_id", "matched_section_ids",
+        "status", "last_asked_fact", "last_question_text", "history"
+    ]
+    
+    for k, v in kwargs.items():
+        if k in allowed_fields:
+            updates[k] = v
+            db_updates[k] = v
+            
     # Update in-memory fallback store
     sess = _in_memory_sessions.setdefault(session_id, {"session_id": session_id})
     sess.update(updates)
 
     client = _client()
-    if client:
+    if client and updates:
         try:
-            db_updates = {"updated_at": "now()"}
-            if domain_id is not None:
-                db_updates["domain_id"] = domain_id
-            if extracted_facts is not None:
-                db_updates["extracted_facts"] = extracted_facts
-            if target_section_id is not None:
-                db_updates["target_section_id"] = target_section_id
-            if matched_section_ids is not None:
-                db_updates["matched_section_ids"] = matched_section_ids
-            if status is not None:
-                db_updates["status"] = status
             client.table("session_facts").update(db_updates).eq("session_id", session_id).execute()
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Error updating session in DB: {e}")
 
 
 def delete_session(session_id: str):
