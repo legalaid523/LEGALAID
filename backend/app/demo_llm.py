@@ -3,7 +3,6 @@ import json
 import time
 from typing import Optional
 from groq import Groq
-import google.generativeai as genai
 import os
 from pydantic import BaseModel
 
@@ -24,14 +23,7 @@ def get_groq_client() -> Groq:
         _groq_client = Groq(api_key=api_key)
     return _groq_client
 
-def configure_gemini():
-    api_key = os.environ.get("GOOGLE_API_KEY")
-    if not api_key:
-        raise RuntimeError("Missing GOOGLE_API_KEY in .env")
-    genai.configure(api_key=api_key)
-
 SYSTEM_PROMPT = """You are a highly intelligent Indian Legal Aid assistant.
-You are interacting with a user who needs legal guidance for issues like tenant disputes, consumer complaints, or labor disputes.
 Your job is to orchestrate the entire conversation turn.
 
 You will be provided with the CURRENT CONVERSATION HISTORY and the available DOMAINS, SECTIONS (laws), and FACTS from our database.
