@@ -1,0 +1,1188 @@
+{
+  "domains": [
+    {
+      "id": "consumer",
+      "name": "Consumer",
+      "description": null
+    },
+    {
+      "id": "labor",
+      "name": "Labor",
+      "description": null
+    },
+    {
+      "id": "tenant",
+      "name": "Tenant",
+      "description": null
+    }
+  ],
+  "sections": [
+    {
+      "id": "consumer_defective_goods",
+      "domain_id": "consumer",
+      "issue": "defective_goods",
+      "notes": null,
+      "confidence_flag_template": "[{\"if_missing\": \"has_receipt_or_invoice\", \"message\": \"No proof of purchase makes the claim harder to establish. Bank/UPI statements or delivery confirmation can substitute.\"}]"
+    },
+    {
+      "id": "consumer_deficient_service",
+      "domain_id": "consumer",
+      "issue": "deficient_service",
+      "notes": null,
+      "confidence_flag_template": "[{\"if_missing\": \"written_communication_exists\", \"message\": \"Written proof (email, chat, complaint ticket) of the provider's failure strengthens the claim significantly.\"}]"
+    },
+    {
+      "id": "consumer_false_advertising",
+      "domain_id": "consumer",
+      "issue": "misleading_advertisement",
+      "notes": null,
+      "confidence_flag_template": "[{\"if_missing\": \"advertisement_seen_or_saved\", \"message\": \"Save a screenshot, photo, or link of the actual advertisement — without it, proving the misleading claim is much harder.\"}]"
+    },
+    {
+      "id": "labor_unpaid_wages",
+      "domain_id": "labor",
+      "issue": "unpaid_or_delayed_wages",
+      "notes": "Claims must generally be filed within 12 months of the unpaid wage period. Wage-ceiling applicability varies by state amendment — verify locally.",
+      "confidence_flag_template": "[{\"if_missing\": \"has_payslip_or_appointment_letter\", \"message\": \"Without a payslip or appointment letter, proving the employment relationship and owed amount will be harder. Bank credit history of past salary payments can help.\"}]"
+    },
+    {
+      "id": "labor_illegal_deduction",
+      "domain_id": "labor",
+      "issue": "unauthorized_salary_deduction",
+      "notes": null,
+      "confidence_flag_template": null
+    },
+    {
+      "id": "labor_wrongful_termination",
+      "domain_id": "labor",
+      "issue": "termination_without_notice_or_compensation",
+      "notes": "'Retrenchment' under the Act excludes termination by disciplinary action, voluntary retirement, and retirement on superannuation. Applicability of the 100-worker threshold provisions (Section 25N) is distinct from the general Section 25F protections.",
+      "confidence_flag_template": "[{\"if_missing\": \"employer_has_over_100_workers\", \"message\": \"Establishments with 100+ workers face additional restrictions on retrenchment under Section 25N (prior government permission required). This changes which section applies — confirm employer size.\"}]"
+    },
+    {
+      "id": "labor_pf_non_payment",
+      "domain_id": "labor",
+      "issue": "provident_fund_not_deposited",
+      "notes": null,
+      "confidence_flag_template": "[{\"if_missing\": \"pf_deducted_from_salary_slip\", \"message\": \"Confirm PF was actually deducted from your salary slip — if it was never deducted, this may instead be a registration/compliance issue rather than a deposit-default issue.\"}]"
+    },
+    {
+      "id": "tenant_deposit_withheld",
+      "domain_id": "tenant",
+      "issue": "security_deposit_withheld",
+      "notes": "IMPORTANT: Model Tenancy Act 2021 is a MODEL law approved by the Union Cabinet — it only takes legal effect in states/UTs that have adopted it via their own legislation.",
+      "confidence_flag_template": "[{\"if_missing\": \"state_has_adopted_model_tenancy_act\", \"message\": \"The Model Tenancy Act is only binding where the state has formally adopted it (e.g. Tamil Nadu, UP, Assam, Andhra Pradesh have) — otherwise your state's own Rent Control Act applies. Confirm which applies before citing this in a notice.\"}]"
+    },
+    {
+      "id": "tenant_illegal_eviction",
+      "domain_id": "tenant",
+      "issue": "eviction_without_notice",
+      "notes": "Same Model Tenancy Act adoption caveat as deposit entry applies.",
+      "confidence_flag_template": "[{\"if_missing\": \"written_agreement_exists\", \"message\": \"No written tenancy agreement makes it harder to establish tenancy terms — oral tenancies still have legal protection in most states, but evidence (rent receipts, bank transfers) becomes more important.\"}]"
+    },
+    {
+      "id": "tenant_rent_hike_no_notice",
+      "domain_id": "tenant",
+      "issue": "rent_increased_without_notice",
+      "notes": null,
+      "confidence_flag_template": "[{\"if_missing\": \"tenancy_agreement_specifies_revision_terms\", \"message\": \"If your written agreement already specifies rent revision terms, those terms govern instead of the default three-month notice rule — check your agreement first.\"}]"
+    },
+    {
+      "id": "tenant_no_rent_receipt",
+      "domain_id": "tenant",
+      "issue": "landlord_refuses_rent_receipt",
+      "notes": null,
+      "confidence_flag_template": "[{\"if_missing\": \"receipt_requested_in_writing\", \"message\": \"A written request (SMS, email, WhatsApp) for the receipt strengthens your claim that the landlord refused — verbal-only requests are harder to prove.\"}]"
+    }
+  ],
+  "applicable_law_sections": [
+    {
+      "section_id": "consumer_defective_goods",
+      "act": "Consumer Protection Act, 2019",
+      "section_number": "Section 2(10)",
+      "text_summary": "Defines 'defect' as any fault, imperfection or shortcoming in the quality, quantity, potency, purity or standard required by law, contract, or the seller's own claim about the goods.",
+      "source_url": "https://indiankanoon.org/doc/47873513/"
+    },
+    {
+      "section_id": "consumer_defective_goods",
+      "act": "Consumer Protection Act, 2019",
+      "section_number": "Section 35",
+      "text_summary": "A complaint must be filed with the District Consumer Disputes Redressal Commission within two years of the defect arising; delay can be condoned for valid reasons.",
+      "source_url": "https://www.lexology.com/library/detail.aspx?g=e4640dbe-76ac-43b1-bcd0-e1ceeba3b80b"
+    },
+    {
+      "section_id": "consumer_deficient_service",
+      "act": "Consumer Protection Act, 2019",
+      "section_number": "Section 2(11)",
+      "text_summary": "Defines 'deficiency' as any fault, imperfection, shortcoming or inadequacy in the quality, nature or manner of performance of a service required by law or contract, including negligence and deliberate withholding of relevant information.",
+      "source_url": "https://indiankanoon.org/doc/195892991/"
+    },
+    {
+      "section_id": "consumer_deficient_service",
+      "act": "Consumer Protection Act, 2019",
+      "section_number": "Section 35",
+      "text_summary": "Complaint must be filed with the District Commission within two years of the deficiency arising.",
+      "source_url": "https://www.lexology.com/library/detail.aspx?g=e4640dbe-76ac-43b1-bcd0-e1ceeba3b80b"
+    },
+    {
+      "section_id": "consumer_false_advertising",
+      "act": "Consumer Protection Act, 2019",
+      "section_number": "Section 2(28)",
+      "text_summary": "Defines 'misleading advertisement' as one that falsely describes the product/service, gives a false guarantee, conveys a representation that would amount to an unfair trade practice, or deliberately conceals material information.",
+      "source_url": "https://indiankanoon.org/doc/134265065/"
+    },
+    {
+      "section_id": "consumer_false_advertising",
+      "act": "Consumer Protection Act, 2019",
+      "section_number": "Section 21",
+      "text_summary": "Empowers the Central Consumer Protection Authority (CCPA) to order discontinuation of misleading ads and impose penalties; publishing a false/misleading advertisement can attract a penalty up to Rs 10 lakh under Section 21(4).",
+      "source_url": "https://www.mondaq.com/india/dodd-frank-consumer-protection-act/1020458/consumer-protection-act-2019-key-takeaways"
+    },
+    {
+      "section_id": "labor_unpaid_wages",
+      "act": "Payment of Wages Act, 1936",
+      "section_number": "Section 5",
+      "text_summary": "Mandates fixed timelines for payment of wages by the employer.",
+      "source_url": "https://www.indiacode.nic.in/bitstream/123456789/8324/1/payment_of_wages_act_1936.pdf"
+    },
+    {
+      "section_id": "labor_unpaid_wages",
+      "act": "Payment of Wages Act, 1936",
+      "section_number": "Section 15(3)",
+      "text_summary": "The claims authority can direct payment of the delayed wages plus compensation, ranging from roughly Rs 1,500 up to 10 times the withheld amount, capped per the section.",
+      "source_url": "https://www.indiacode.nic.in/bitstream/123456789/8324/1/payment_of_wages_act_1936.pdf"
+    },
+    {
+      "section_id": "labor_illegal_deduction",
+      "act": "Payment of Wages Act, 1936",
+      "section_number": "Section 7(2)",
+      "text_summary": "Only specific deductions are authorized: income tax, PF/ESI employee share, absence from duty, salary advances, court-ordered deductions, and fines up to 3% of wages. Any other deduction (e.g. for uniforms, tools, performance penalties) is unauthorized.",
+      "source_url": "https://www.indiacode.nic.in/bitstream/123456789/8324/1/payment_of_wages_act_1936.pdf"
+    },
+    {
+      "section_id": "labor_wrongful_termination",
+      "act": "Industrial Disputes Act, 1947",
+      "section_number": "Section 25F",
+      "text_summary": "A workman with at least one year of continuous service cannot be retrenched unless given one month's written notice (or pay in lieu), paid compensation equal to 15 days' average pay per completed year of service, and the appropriate government is notified.",
+      "source_url": "https://indiankanoon.org/doc/1056316/"
+    },
+    {
+      "section_id": "labor_pf_non_payment",
+      "act": "Employees' Provident Funds and Miscellaneous Provisions Act, 1952",
+      "section_number": "Section 6",
+      "text_summary": "Mandates employer contribution to the Provident Fund at the prescribed rate (typically 10-12% of basic wages plus dearness allowance) for every employee.",
+      "source_url": "https://indiankanoon.org/doc/1123739/"
+    },
+    {
+      "section_id": "labor_pf_non_payment",
+      "act": "Employees' Provident Funds and Miscellaneous Provisions Act, 1952",
+      "section_number": "Section 14",
+      "text_summary": "Employer default in depositing PF contributions is punishable with imprisonment (up to 3 years) and fines; deducting the employee's share and failing to deposit it carries a minimum 1-year term and Rs 10,000 fine.",
+      "source_url": "https://indiankanoon.org/doc/437139/"
+    },
+    {
+      "section_id": "tenant_deposit_withheld",
+      "act": "Model Tenancy Act, 2021 (if adopted by the relevant state) / applicable State Rent Control Act",
+      "section_number": "Security deposit & refund provisions",
+      "text_summary": "Security deposit is capped (typically 2 months' rent for residential premises) and must be refunded at handover of vacant possession after only documented, valid deductions (damage beyond normal wear and tear, unpaid dues) — not ordinary wear and tear.",
+      "source_url": "https://mohua.gov.in/upload/uploadfiles/files/Model-Tenancy-Act-English-02_06_2021.pdf"
+    },
+    {
+      "section_id": "tenant_illegal_eviction",
+      "act": "Model Tenancy Act, 2021 (if adopted) / applicable State Rent Control Act",
+      "section_number": "Eviction conditions",
+      "text_summary": "Valid grounds for eviction are limited (e.g. non-payment of rent for over two consecutive months, unauthorized occupation, misuse after written notice) — eviction outside these grounds, or without due process, is not lawful.",
+      "source_url": "https://mohua.gov.in/upload/uploadfiles/files/Model-Tenancy-Act-English-02_06_2021.pdf"
+    },
+    {
+      "section_id": "tenant_rent_hike_no_notice",
+      "act": "Model Tenancy Act, 2021 (if adopted) / tenancy agreement terms",
+      "section_number": "Rent revision provisions",
+      "text_summary": "In the absence of a revision clause in the tenancy agreement, the landlord must give at least three months' prior written notice before revising rent; if the tenant does not respond with a termination notice, the increase is deemed accepted.",
+      "source_url": "https://www.linkedin.com/pulse/overview-model-tenancy-act-2021-hereinafter-referred-mta-kapil-malik"
+    },
+    {
+      "section_id": "tenant_no_rent_receipt",
+      "act": "Model Tenancy Act, 2021 (if adopted) / applicable State Rent Control Act",
+      "section_number": "Landlord's duty to issue rent receipt",
+      "text_summary": "On receipt of rent, the landlord is obligated to provide the tenant a duly signed receipt. If the landlord refuses to accept rent or give a receipt, the tenant may send the rent by postal money order as documented proof of payment.",
+      "source_url": "https://www.livelaw.in/law-firms/law-firm-articles-/model-tenancy-act-lease-rent-authority-property-manager-176168"
+    }
+  ],
+  "fact_definitions": [
+    {
+      "fact_key": "purchase_for_personal_use",
+      "label": "Purchase for personal use",
+      "fact_type": "boolean",
+      "default_question_en": "Did you buy the product mainly for your own personal use (not for resale or business use)?",
+      "default_question_hi": "क्याआपने यह उत्पाद मुख्य रूप से अपने निजी उपयोग के लिए खरीदा था (पुनर्विक्रय या व्यावसायिक उपयोग के लिए नहीं)?",
+      "synonyms": [
+        "bought for myself",
+        "personal use",
+        "not for resale",
+        "not for business"
+      ]
+    },
+    {
+      "fact_key": "seller_refused_refund_or_replacement",
+      "label": "Seller refused refund or replacement",
+      "fact_type": "boolean",
+      "default_question_en": "Did the seller refuse to give you a refund or replacement for the defective product?",
+      "default_question_hi": "क्या विक्रेता ने खराब उत्पाद के लिए रिफंड या बदलाव देने से इनकार किया?",
+      "synonyms": [
+        "refused refund",
+        "wouldn't replace it",
+        "denied refund",
+        "seller said no refund",
+        "refund mana kar diya"
+      ]
+    },
+    {
+      "fact_key": "days_since_purchase",
+      "label": "Days since purchase",
+      "fact_type": "number",
+      "default_question_en": "How many days has it been since you purchased the product?",
+      "default_question_hi": "उत्पाद खरीदे हुए कितने दिन हो गए हैं?",
+      "synonyms": [
+        "days since bought",
+        "purchase date",
+        "how long ago I bought it",
+        "kitne din pehle khareeda"
+      ]
+    },
+    {
+      "fact_key": "has_receipt_or_invoice",
+      "label": "Has receipt or invoice",
+      "fact_type": "boolean",
+      "default_question_en": "Do you have a receipt, invoice, or other proof of purchase?",
+      "default_question_hi": "क्या आपके पास खरीद की रसीद, इनवॉइस या अन्य प्रमाण है?",
+      "synonyms": [
+        "receipt",
+        "invoice",
+        "bill",
+        "proof of purchase",
+        "bill hai"
+      ]
+    },
+    {
+      "fact_key": "service_type",
+      "label": "Service type",
+      "fact_type": "string",
+      "default_question_en": "What type of service was this (e.g. repair, delivery, construction, telecom)?",
+      "default_question_hi": "यह किस प्रकार की सेवा थी (जैसे मरम्मत, डिलीवरी, निर्माण, टेलीकॉम)?",
+      "synonyms": [
+        "kind of service",
+        "type of service",
+        "what service"
+      ]
+    },
+    {
+      "fact_key": "provider_failed_to_perform_as_promised",
+      "label": "Provider failed to perform as promised",
+      "fact_type": "boolean",
+      "default_question_en": "Did the service provider fail to do what they promised, or perform it poorly?",
+      "default_question_hi": "क्या सेवा प्रदाता ने वादा किए अनुसार सेवा नहीं दी या खराब तरीके से दी?",
+      "synonyms": [
+        "didn't do what they promised",
+        "service was bad",
+        "not as promised",
+        "provider failed",
+        "vaada tod diya"
+      ]
+    },
+    {
+      "fact_key": "days_since_incident",
+      "label": "Days since incident",
+      "fact_type": "number",
+      "default_question_en": "How many days has it been since the incident happened?",
+      "default_question_hi": "यह घटना हुए कितने दिन हो गए हैं?",
+      "synonyms": [
+        "days since it happened",
+        "how long ago",
+        "kitne din ho gaye"
+      ]
+    },
+    {
+      "fact_key": "written_communication_exists",
+      "label": "Written communication exists",
+      "fact_type": "boolean",
+      "default_question_en": "Do you have any written communication (email, chat, complaint ticket) about this issue?",
+      "default_question_hi": "क्या आपके पास इस समस्या के बारे में कोई लिखित संचार (ईमेल, चैट, शिकायत टिकट) है?",
+      "synonyms": [
+        "email proof",
+        "chat proof",
+        "complaint ticket",
+        "written proof",
+        "message likha hai"
+      ]
+    },
+    {
+      "fact_key": "advertisement_seen_or_saved",
+      "label": "Advertisement seen or saved",
+      "fact_type": "boolean",
+      "default_question_en": "Do you have a copy or screenshot of the advertisement you saw?",
+      "default_question_hi": "क्या आपके पास देखे गए विज्ञापन की कोई प्रति या स्क्रीनशॉट है?",
+      "synonyms": [
+        "saw the ad",
+        "screenshot of ad",
+        "ad copy",
+        "advertisement proof"
+      ]
+    },
+    {
+      "fact_key": "product_did_not_match_ad_claim",
+      "label": "Product did not match ad claim",
+      "fact_type": "boolean",
+      "default_question_en": "Did the product or service you received differ from what the advertisement claimed?",
+      "default_question_hi": "क्या आपको मिला उत्पाद या सेवा विज्ञापन में किए गए दावे से अलग था?",
+      "synonyms": [
+        "different from ad",
+        "ad was false",
+        "not as advertised",
+        "misleading ad"
+      ]
+    },
+    {
+      "fact_key": "purchase_made_based_on_ad",
+      "label": "Purchase made based on ad",
+      "fact_type": "boolean",
+      "default_question_en": "Did you decide to buy mainly because of this advertisement?",
+      "default_question_hi": "क्या आपने मुख्य रूप से इस विज्ञापन के कारण खरीदने का निर्णय लिया?",
+      "synonyms": [
+        "bought because of the ad",
+        "ad convinced me",
+        "trusted the advertisement"
+      ]
+    },
+    {
+      "fact_key": "wages_owed_amount",
+      "label": "Wages owed amount",
+      "fact_type": "number",
+      "default_question_en": "What is the total amount of wages owed to you?",
+      "default_question_hi": "आपको कुल कितनी राशि का वेतन बकाया है?",
+      "synonyms": [
+        "salary owed",
+        "unpaid wages amount",
+        "how much they owe",
+        "bakaya salary"
+      ]
+    },
+    {
+      "fact_key": "days_delayed",
+      "label": "Days delayed",
+      "fact_type": "number",
+      "default_question_en": "How many days have your wages been delayed beyond the due date?",
+      "default_question_hi": "आपका वेतन नियत तारीख से कितने दिन देर से है?",
+      "synonyms": [
+        "salary late by",
+        "days late",
+        "delayed payment",
+        "salary delay kitne din"
+      ]
+    },
+    {
+      "fact_key": "still_employed",
+      "label": "Still employed",
+      "fact_type": "boolean",
+      "default_question_en": "Are you still currently employed with this employer?",
+      "default_question_hi": "क्या आप अभी भी इस नियोक्ता के साथ कार्यरत हैं?",
+      "synonyms": [
+        "still working there",
+        "currently employed",
+        "abhi bhi job pe hoon"
+      ]
+    },
+    {
+      "fact_key": "has_payslip_or_appointment_letter",
+      "label": "Has payslip or appointment letter",
+      "fact_type": "boolean",
+      "default_question_en": "Do you have a payslip or appointment letter from this employer?",
+      "default_question_hi": "क्या आपके पास इस नियोक्ता का वेतन पर्ची या नियुक्ति पत्र है?",
+      "synonyms": [
+        "payslip",
+        "salary slip",
+        "appointment letter",
+        "offer letter"
+      ]
+    },
+    {
+      "fact_key": "deduction_reason",
+      "label": "Deduction reason",
+      "fact_type": "string",
+      "default_question_en": "What reason did your employer give for the salary deduction?",
+      "default_question_hi": "आपके नियोक्ता ने वेतन कटौती का क्या कारण बताया?",
+      "synonyms": [
+        "why they deducted",
+        "reason for deduction",
+        "deduction ka reason"
+      ]
+    },
+    {
+      "fact_key": "deduction_amount",
+      "label": "Deduction amount",
+      "fact_type": "number",
+      "default_question_en": "How much was deducted from your salary?",
+      "default_question_hi": "आपके वेतन से कितनी राशि काटी गई?",
+      "synonyms": [
+        "how much deducted",
+        "deduction amount",
+        "kitna kaata"
+      ]
+    },
+    {
+      "fact_key": "reason_matches_authorized_list",
+      "label": "Reason matches authorized list",
+      "fact_type": "boolean",
+      "default_question_en": "Does the stated reason match one of the deductions legally authorized under the Payment of Wages Act (tax, PF/ESI, absence, advances, court order, or fines up to 3% of wages)?",
+      "default_question_hi": "क्या बताया गया कारण भुगतान वेतन अधिनियम के तहत कानूनी रूप से अधिकृत कटौतियों (कर, PF/ESI, अनुपस्थिति, अग्रिम, न्यायालय आदेश, या वेतन का 3% तक जुर्माना) में से किसी से मेल खाता है?",
+      "synonyms": [
+        "was it a legal deduction",
+        "authorized deduction",
+        "valid deduction reason"
+      ]
+    },
+    {
+      "fact_key": "continuous_service_over_1_year",
+      "label": "Continuous service over 1 year",
+      "fact_type": "boolean",
+      "default_question_en": "Had you completed at least one year of continuous service with this employer before termination?",
+      "default_question_hi": "क्या समाप्ति से पहले आपने इस नियोक्ता के साथ कम से कम एक वर्ष की निरंतर सेवा पूरी की थी?",
+      "synonyms": [
+        "worked over a year",
+        "one year service",
+        "1 saal se zyada kaam"
+      ]
+    },
+    {
+      "fact_key": "written_notice_received",
+      "label": "Written notice received",
+      "fact_type": "boolean",
+      "default_question_en": "Did you receive written notice (or pay in lieu of notice) before the termination?",
+      "default_question_hi": "क्या समाप्ति से पहले आपको लिखित सूचना (या सूचना के बदले वेतन) मिली थी?",
+      "synonyms": [
+        "notice period",
+        "termination letter",
+        "written notice",
+        "pink slip",
+        "notice mila"
+      ]
+    },
+    {
+      "fact_key": "retrenchment_compensation_paid",
+      "label": "Retrenchment compensation paid",
+      "fact_type": "boolean",
+      "default_question_en": "Were you paid retrenchment compensation (15 days' average pay per completed year of service)?",
+      "default_question_hi": "क्या आपको छंटनी मुआवजा (प्रत्येक पूर्ण वर्ष की सेवा के लिए 15 दिनों का औसत वेतन) दिया गया?",
+      "synonyms": [
+        "severance paid",
+        "retrenchment pay",
+        "compensation received"
+      ]
+    },
+    {
+      "fact_key": "termination_was_disciplinary_action",
+      "label": "Termination was disciplinary action",
+      "fact_type": "boolean",
+      "default_question_en": "Was your termination the result of disciplinary action (e.g. misconduct)?",
+      "default_question_hi": "क्या आपकी समाप्ति अनुशासनात्मक कार्रवाई (जैसे कदाचार) के परिणामस्वरूप हुई थी?",
+      "synonyms": [
+        "fired for misconduct",
+        "disciplinary termination",
+        "fired for cause"
+      ]
+    },
+    {
+      "fact_key": "employer_has_over_100_workers",
+      "label": "Employer has over 100 workers",
+      "fact_type": "boolean",
+      "default_question_en": "Does your employer's establishment have 100 or more workers?",
+      "default_question_hi": "क्या आपके नियोक्ता के प्रतिष्ठान में 100 या अधिक कर्मचारी हैं?",
+      "synonyms": [
+        "company size",
+        "number of employees",
+        "100+ workers",
+        "kitne employees hain"
+      ]
+    },
+    {
+      "fact_key": "pf_deducted_from_salary_slip",
+      "label": "Pf deducted from salary slip",
+      "fact_type": "boolean",
+      "default_question_en": "Does your salary slip show a Provident Fund (PF) deduction each month?",
+      "default_question_hi": "क्या आपकी वेतन पर्ची में हर महीने भविष्य निधि (PF) कटौती दिखाई जाती है?",
+      "synonyms": [
+        "PF deducted",
+        "provident fund cut",
+        "PF salary slip mein"
+      ]
+    },
+    {
+      "fact_key": "employer_confirmed_non_deposit",
+      "label": "Employer confirmed non deposit",
+      "fact_type": "boolean",
+      "default_question_en": "Has it been confirmed (e.g. via EPFO passbook) that your employer did not deposit the deducted PF amount?",
+      "default_question_hi": "क्या यह पुष्टि हुई है (जैसे EPFO पासबुक के माध्यम से) कि आपके नियोक्ता ने कटौती की गई PF राशि जमा नहीं की?",
+      "synonyms": [
+        "PF not deposited",
+        "EPFO passbook empty",
+        "PF missing"
+      ]
+    },
+    {
+      "fact_key": "months_affected",
+      "label": "Months affected",
+      "fact_type": "number",
+      "default_question_en": "For how many months has this non-deposit occurred?",
+      "default_question_hi": "यह जमा न होने की समस्या कितने महीनों से हो रही है?",
+      "synonyms": [
+        "how many months",
+        "since how long",
+        "kitne mahine se"
+      ]
+    },
+    {
+      "fact_key": "deposit_amount",
+      "label": "Deposit amount",
+      "fact_type": "number",
+      "default_question_en": "What was the security deposit amount?",
+      "default_question_hi": "सुरक्षा जमा राशि कितनी थी?",
+      "synonyms": [
+        "security deposit",
+        "deposit amount",
+        "advance amount"
+      ]
+    },
+    {
+      "fact_key": "monthly_rent",
+      "label": "Monthly rent",
+      "fact_type": "number",
+      "default_question_en": "What is/was the monthly rent?",
+      "default_question_hi": "मासिक किराया कितना है/था?",
+      "synonyms": [
+        "rent amount",
+        "monthly rent",
+        "kiraya kitna"
+      ]
+    },
+    {
+      "fact_key": "damage_documented_by_landlord",
+      "label": "Damage documented by landlord",
+      "fact_type": "boolean",
+      "default_question_en": "Did the landlord document any specific damage to justify withholding the deposit?",
+      "default_question_hi": "क्या मकान मालिक ने जमा राशि रोकने के लिए किसी विशिष्ट क्षति का दस्तावेजीकरण किया?",
+      "synonyms": [
+        "landlord documented damage",
+        "damage proof",
+        "damage claim by landlord"
+      ]
+    },
+    {
+      "fact_key": "days_since_vacate",
+      "label": "Days since vacate",
+      "fact_type": "number",
+      "default_question_en": "How many days has it been since you vacated the property?",
+      "default_question_hi": "संपत्ति खाली किए हुए कितने दिन हो गए हैं?",
+      "synonyms": [
+        "days since moved out",
+        "vacated how long ago",
+        "khaali kiye kitne din"
+      ]
+    },
+    {
+      "fact_key": "state_has_adopted_model_tenancy_act",
+      "label": "State has adopted model tenancy act",
+      "fact_type": "boolean",
+      "default_question_en": "Has your state formally adopted the Model Tenancy Act, 2021?",
+      "default_question_hi": "क्या आपके राज्य ने आदर्श किरायेदारी अधिनियम, 2021 को औपचारिक रूप से अपनाया है?",
+      "synonyms": [
+        "state adopted MTA",
+        "Model Tenancy Act applicable",
+        "MTA in my state"
+      ]
+    },
+    {
+      "fact_key": "notice_period_days",
+      "label": "Notice period days",
+      "fact_type": "number",
+      "default_question_en": "How many days of notice (if any) did you actually receive?",
+      "default_question_hi": "आपको वास्तव में कितने दिनों की सूचना (यदि कोई हो) मिली?",
+      "synonyms": [
+        "notice days given",
+        "how much notice",
+        "notice period"
+      ]
+    },
+    {
+      "fact_key": "rent_payments_current",
+      "label": "Rent payments current",
+      "fact_type": "boolean",
+      "default_question_en": "Are your rent payments up to date (no unpaid dues)?",
+      "default_question_hi": "क्या आपका किराया भुगतान वर्तमान में अद्यतन है (कोई बकाया नहीं)?",
+      "synonyms": [
+        "rent paid up to date",
+        "no rent due",
+        "rent clear hai"
+      ]
+    },
+    {
+      "fact_key": "written_agreement_exists",
+      "label": "Written agreement exists",
+      "fact_type": "boolean",
+      "default_question_en": "Do you have a written tenancy agreement?",
+      "default_question_hi": "क्या आपके पास लिखित किरायेदारी समझौता है?",
+      "synonyms": [
+        "rental agreement",
+        "lease agreement",
+        "written contract",
+        "agreement hai"
+      ]
+    },
+    {
+      "fact_key": "rent_increase_percentage",
+      "label": "Rent increase percentage",
+      "fact_type": "number",
+      "default_question_en": "By what percentage was your rent increased?",
+      "default_question_hi": "आपका किराया कितने प्रतिशत बढ़ाया गया?",
+      "synonyms": [
+        "rent hike percent",
+        "how much rent increased",
+        "kitna rent badha"
+      ]
+    },
+    {
+      "fact_key": "advance_notice_given_days",
+      "label": "Advance notice given days",
+      "fact_type": "number",
+      "default_question_en": "How many days of advance notice did your landlord give before increasing the rent?",
+      "default_question_hi": "किराया बढ़ाने से पहले मकान मालिक ने कितने दिन पहले सूचना दी?",
+      "synonyms": [
+        "notice before rent hike",
+        "days notice for increase",
+        "advance notice"
+      ]
+    },
+    {
+      "fact_key": "tenancy_agreement_specifies_revision_terms",
+      "label": "Tenancy agreement specifies revision terms",
+      "fact_type": "boolean",
+      "default_question_en": "Does your written tenancy agreement specify its own rent revision terms?",
+      "default_question_hi": "क्या आपके लिखित किरायेदारी समझौते में किराया संशोधन की अपनी शर्तें निर्दिष्ट हैं?",
+      "synonyms": [
+        "agreement has rent revision clause",
+        "revision terms in lease"
+      ]
+    },
+    {
+      "fact_key": "structural_improvement_made_by_landlord",
+      "label": "Structural improvement made by landlord",
+      "fact_type": "boolean",
+      "default_question_en": "Did the landlord make any structural improvement to the property that could justify the increase?",
+      "default_question_hi": "क्या मकान मालिक ने संपत्ति में कोई संरचनात्मक सुधार किया जो वृद्धि को उचित ठहरा सके?",
+      "synonyms": [
+        "landlord renovated",
+        "structural improvement",
+        "landlord upgraded property"
+      ]
+    },
+    {
+      "fact_key": "rent_paid_via",
+      "label": "Rent paid via",
+      "fact_type": "string",
+      "default_question_en": "How do you pay your rent (cash, bank transfer, UPI, cheque)?",
+      "default_question_hi": "आप अपना किराया कैसे भुगतान करते हैं (नकद, बैंक ट्रांसफर, UPI, चेक)?",
+      "synonyms": [
+        "how I pay rent",
+        "payment method",
+        "cash or bank transfer"
+      ]
+    },
+    {
+      "fact_key": "receipt_requested_in_writing",
+      "label": "Receipt requested in writing",
+      "fact_type": "boolean",
+      "default_question_en": "Have you requested a rent receipt in writing (SMS, email, WhatsApp)?",
+      "default_question_hi": "क्या आपने लिखित रूप में (SMS, ईमेल, व्हाट्सएप) किराया रसीद का अनुरोध किया है?",
+      "synonyms": [
+        "asked for receipt in writing",
+        "requested receipt via message",
+        "receipt maanga"
+      ]
+    },
+    {
+      "fact_key": "landlord_refused_explicitly",
+      "label": "Landlord refused explicitly",
+      "fact_type": "boolean",
+      "default_question_en": "Did the landlord explicitly refuse to give you a rent receipt?",
+      "default_question_hi": "क्या मकान मालिक ने किराया रसीद देने से स्पष्ट रूप से इनकार किया?",
+      "synonyms": [
+        "landlord refused receipt",
+        "denied giving receipt",
+        "receipt dene se mana"
+      ]
+    }
+  ],
+  "section_facts": [
+    {
+      "section_id": "consumer_defective_goods",
+      "fact_key": "purchase_for_personal_use",
+      "required": true,
+      "weight": 3,
+      "condition_operator": "==",
+      "condition_value": true,
+      "question_text_en": "Did you buy the product mainly for your own personal use (not for resale or business use)?",
+      "question_text_hi": "क्या आपने यह उत्पाद मुख्य रूप से अपने निजी उपयोग के लिए खरीदा था (पुनर्विक्रय या व्यावसायिक उपयोग के लिए नहीं)?",
+      "ask_order": 0
+    },
+    {
+      "section_id": "consumer_defective_goods",
+      "fact_key": "seller_refused_refund_or_replacement",
+      "required": true,
+      "weight": 3,
+      "condition_operator": "==",
+      "condition_value": true,
+      "question_text_en": "Did the seller refuse to give you a refund or replacement for the defective product?",
+      "question_text_hi": "क्या विक्रेता ने खराब उत्पाद के लिए रिफंड या बदलाव देने से इनकार किया?",
+      "ask_order": 1
+    },
+    {
+      "section_id": "consumer_defective_goods",
+      "fact_key": "days_since_purchase",
+      "required": false,
+      "weight": 1,
+      "condition_operator": "exists",
+      "condition_value": null,
+      "question_text_en": "How many days has it been since you purchased the product?",
+      "question_text_hi": "उत्पाद खरीदे हुए कितने दिन हो गए हैं?",
+      "ask_order": 3
+    },
+    {
+      "section_id": "consumer_defective_goods",
+      "fact_key": "has_receipt_or_invoice",
+      "required": false,
+      "weight": 2,
+      "condition_operator": "exists",
+      "condition_value": null,
+      "question_text_en": "Do you have a receipt, invoice, or other proof of purchase?",
+      "question_text_hi": "क्या आपके पास खरीद की रसीद, इनवॉइस या अन्य प्रमाण है?",
+      "ask_order": 2
+    },
+    {
+      "section_id": "consumer_deficient_service",
+      "fact_key": "service_type",
+      "required": false,
+      "weight": 1,
+      "condition_operator": "exists",
+      "condition_value": null,
+      "question_text_en": "What type of service was this (e.g. repair, delivery, construction, telecom)?",
+      "question_text_hi": "यह किस प्रकार की सेवा थी (जैसे मरम्मत, डिलीवरी, निर्माण, टेलीकॉम)?",
+      "ask_order": 2
+    },
+    {
+      "section_id": "consumer_deficient_service",
+      "fact_key": "provider_failed_to_perform_as_promised",
+      "required": true,
+      "weight": 3,
+      "condition_operator": "==",
+      "condition_value": true,
+      "question_text_en": "Did the service provider fail to do what they promised, or perform it poorly?",
+      "question_text_hi": "क्या सेवा प्रदाता ने वादा किए अनुसार सेवा नहीं दी या खराब तरीके से दी?",
+      "ask_order": 0
+    },
+    {
+      "section_id": "consumer_deficient_service",
+      "fact_key": "days_since_incident",
+      "required": false,
+      "weight": 1,
+      "condition_operator": "exists",
+      "condition_value": null,
+      "question_text_en": "How many days has it been since the incident happened?",
+      "question_text_hi": "यह घटना हुए कितने दिन हो गए हैं?",
+      "ask_order": 3
+    },
+    {
+      "section_id": "consumer_deficient_service",
+      "fact_key": "written_communication_exists",
+      "required": false,
+      "weight": 2,
+      "condition_operator": "exists",
+      "condition_value": null,
+      "question_text_en": "Do you have any written communication (email, chat, complaint ticket) about this issue?",
+      "question_text_hi": "क्या आपके पास इस समस्या के बारे में कोई लिखित संचार (ईमेल, चैट, शिकायत टिकट) है?",
+      "ask_order": 1
+    },
+    {
+      "section_id": "consumer_false_advertising",
+      "fact_key": "advertisement_seen_or_saved",
+      "required": false,
+      "weight": 2,
+      "condition_operator": "exists",
+      "condition_value": null,
+      "question_text_en": "Do you have a copy or screenshot of the advertisement you saw?",
+      "question_text_hi": "क्या आपके पास देखे गए विज्ञापन की कोई प्रति या स्क्रीनशॉट है?",
+      "ask_order": 1
+    },
+    {
+      "section_id": "consumer_false_advertising",
+      "fact_key": "product_did_not_match_ad_claim",
+      "required": true,
+      "weight": 3,
+      "condition_operator": "==",
+      "condition_value": true,
+      "question_text_en": "Did the product or service you received differ from what the advertisement claimed?",
+      "question_text_hi": "क्या आपको मिला उत्पाद या सेवा विज्ञापन में किए गए दावे से अलग था?",
+      "ask_order": 0
+    },
+    {
+      "section_id": "consumer_false_advertising",
+      "fact_key": "purchase_made_based_on_ad",
+      "required": false,
+      "weight": 1,
+      "condition_operator": "exists",
+      "condition_value": null,
+      "question_text_en": "Did you decide to buy mainly because of this advertisement?",
+      "question_text_hi": "क्या आपने मुख्य रूप से इस विज्ञापन के कारण खरीदने का निर्णय लिया?",
+      "ask_order": 2
+    },
+    {
+      "section_id": "labor_unpaid_wages",
+      "fact_key": "wages_owed_amount",
+      "required": false,
+      "weight": 1,
+      "condition_operator": "exists",
+      "condition_value": null,
+      "question_text_en": "What is the total amount of wages owed to you?",
+      "question_text_hi": "आपको कुल कितनी राशि का वेतन बकाया है?",
+      "ask_order": 2
+    },
+    {
+      "section_id": "labor_unpaid_wages",
+      "fact_key": "days_delayed",
+      "required": true,
+      "weight": 3,
+      "condition_operator": ">",
+      "condition_value": 0,
+      "question_text_en": "How many days have your wages been delayed beyond the due date?",
+      "question_text_hi": "आपका वेतन नियत तारीख से कितने दिन देर से है?",
+      "ask_order": 0
+    },
+    {
+      "section_id": "labor_unpaid_wages",
+      "fact_key": "still_employed",
+      "required": false,
+      "weight": 1,
+      "condition_operator": "exists",
+      "condition_value": null,
+      "question_text_en": "Are you still currently employed with this employer?",
+      "question_text_hi": "क्या आप अभी भी इस नियोक्ता के साथ कार्यरत हैं?",
+      "ask_order": 3
+    },
+    {
+      "section_id": "labor_unpaid_wages",
+      "fact_key": "has_payslip_or_appointment_letter",
+      "required": false,
+      "weight": 2,
+      "condition_operator": "exists",
+      "condition_value": null,
+      "question_text_en": "Do you have a payslip or appointment letter from this employer?",
+      "question_text_hi": "क्या आपके पास इस नियोक्ता का वेतन पर्ची या नियुक्ति पत्र है?",
+      "ask_order": 1
+    },
+    {
+      "section_id": "labor_illegal_deduction",
+      "fact_key": "deduction_reason",
+      "required": false,
+      "weight": 1,
+      "condition_operator": "exists",
+      "condition_value": null,
+      "question_text_en": "What reason did your employer give for the salary deduction?",
+      "question_text_hi": "आपके नियोक्ता ने वेतन कटौती का क्या कारण बताया?",
+      "ask_order": 1
+    },
+    {
+      "section_id": "labor_illegal_deduction",
+      "fact_key": "deduction_amount",
+      "required": false,
+      "weight": 1,
+      "condition_operator": "exists",
+      "condition_value": null,
+      "question_text_en": "How much was deducted from your salary?",
+      "question_text_hi": "आपके वेतन से कितनी राशि काटी गई?",
+      "ask_order": 2
+    },
+    {
+      "section_id": "labor_illegal_deduction",
+      "fact_key": "reason_matches_authorized_list",
+      "required": true,
+      "weight": 3,
+      "condition_operator": "==",
+      "condition_value": false,
+      "question_text_en": "Does the stated reason match one of the deductions legally authorized under the Payment of Wages Act (tax, PF/ESI, absence, advances, court order, or fines up to 3% of wages)?",
+      "question_text_hi": "क्या बताया गया कारण भुगतान वेतन अधिनियम के तहत कानूनी रूप से अधिकृत कटौतियों (कर, PF/ESI, अनुपस्थिति, अग्रिम, न्यायालय आदेश, या वेतन का 3% तक जुर्माना) में से किसी से मेल खाता है?",
+      "ask_order": 0
+    },
+    {
+      "section_id": "labor_wrongful_termination",
+      "fact_key": "continuous_service_over_1_year",
+      "required": true,
+      "weight": 3,
+      "condition_operator": "==",
+      "condition_value": true,
+      "question_text_en": "Had you completed at least one year of continuous service with this employer before termination?",
+      "question_text_hi": "क्या समाप्ति से पहले आपने इस नियोक्ता के साथ कम से कम एक वर्ष की निरंतर सेवा पूरी की थी?",
+      "ask_order": 0
+    },
+    {
+      "section_id": "labor_wrongful_termination",
+      "fact_key": "written_notice_received",
+      "required": true,
+      "weight": 3,
+      "condition_operator": "==",
+      "condition_value": false,
+      "question_text_en": "Did you receive written notice (or pay in lieu of notice) before the termination?",
+      "question_text_hi": "क्या समाप्ति से पहले आपको लिखित सूचना (या सूचना के बदले वेतन) मिली थी?",
+      "ask_order": 1
+    },
+    {
+      "section_id": "labor_wrongful_termination",
+      "fact_key": "retrenchment_compensation_paid",
+      "required": false,
+      "weight": 1,
+      "condition_operator": "exists",
+      "condition_value": null,
+      "question_text_en": "Were you paid retrenchment compensation (15 days' average pay per completed year of service)?",
+      "question_text_hi": "क्या आपको छंटनी मुआवजा (प्रत्येक पूर्ण वर्ष की सेवा के लिए 15 दिनों का औसत वेतन) दिया गया?",
+      "ask_order": 4
+    },
+    {
+      "section_id": "labor_wrongful_termination",
+      "fact_key": "termination_was_disciplinary_action",
+      "required": true,
+      "weight": 3,
+      "condition_operator": "==",
+      "condition_value": false,
+      "question_text_en": "Was your termination the result of disciplinary action (e.g. misconduct)?",
+      "question_text_hi": "क्या आपकी समाप्ति अनुशासनात्मक कार्रवाई (जैसे कदाचार) के परिणामस्वरूप हुई थी?",
+      "ask_order": 2
+    },
+    {
+      "section_id": "labor_wrongful_termination",
+      "fact_key": "employer_has_over_100_workers",
+      "required": false,
+      "weight": 2,
+      "condition_operator": "exists",
+      "condition_value": null,
+      "question_text_en": "Does your employer's establishment have 100 or more workers?",
+      "question_text_hi": "क्या आपके नियोक्ता के प्रतिष्ठान में 100 या अधिक कर्मचारी हैं?",
+      "ask_order": 3
+    },
+    {
+      "section_id": "labor_pf_non_payment",
+      "fact_key": "pf_deducted_from_salary_slip",
+      "required": true,
+      "weight": 3,
+      "condition_operator": "==",
+      "condition_value": true,
+      "question_text_en": "Does your salary slip show a Provident Fund (PF) deduction each month?",
+      "question_text_hi": "क्या आपकी वेतन पर्ची में हर महीने भविष्य निधि (PF) कटौती दिखाई जाती है?",
+      "ask_order": 0
+    },
+    {
+      "section_id": "labor_pf_non_payment",
+      "fact_key": "employer_confirmed_non_deposit",
+      "required": true,
+      "weight": 3,
+      "condition_operator": "==",
+      "condition_value": true,
+      "question_text_en": "Has it been confirmed (e.g. via EPFO passbook) that your employer did not deposit the deducted PF amount?",
+      "question_text_hi": "क्या यह पुष्टि हुई है (जैसे EPFO पासबुक के माध्यम से) कि आपके नियोक्ता ने कटौती की गई PF राशि जमा नहीं की?",
+      "ask_order": 1
+    },
+    {
+      "section_id": "labor_pf_non_payment",
+      "fact_key": "months_affected",
+      "required": false,
+      "weight": 1,
+      "condition_operator": "exists",
+      "condition_value": null,
+      "question_text_en": "For how many months has this non-deposit occurred?",
+      "question_text_hi": "यह जमा न होने की समस्या कितने महीनों से हो रही है?",
+      "ask_order": 2
+    },
+    {
+      "section_id": "tenant_deposit_withheld",
+      "fact_key": "deposit_amount",
+      "required": false,
+      "weight": 1,
+      "condition_operator": "exists",
+      "condition_value": null,
+      "question_text_en": "What was the security deposit amount?",
+      "question_text_hi": "सुरक्षा जमा राशि कितनी थी?",
+      "ask_order": 3
+    },
+    {
+      "section_id": "tenant_deposit_withheld",
+      "fact_key": "monthly_rent",
+      "required": false,
+      "weight": 1,
+      "condition_operator": "exists",
+      "condition_value": null,
+      "question_text_en": "What is/was the monthly rent?",
+      "question_text_hi": "मासिक किराया कितना है/था?",
+      "ask_order": 4
+    },
+    {
+      "section_id": "tenant_deposit_withheld",
+      "fact_key": "damage_documented_by_landlord",
+      "required": true,
+      "weight": 3,
+      "condition_operator": "==",
+      "condition_value": false,
+      "question_text_en": "Did the landlord document any specific damage to justify withholding the deposit?",
+      "question_text_hi": "क्या मकान मालिक ने जमा राशि रोकने के लिए किसी विशिष्ट क्षति का दस्तावेजीकरण किया?",
+      "ask_order": 0
+    },
+    {
+      "section_id": "tenant_deposit_withheld",
+      "fact_key": "days_since_vacate",
+      "required": true,
+      "weight": 3,
+      "condition_operator": ">",
+      "condition_value": 30,
+      "question_text_en": "How many days has it been since you vacated the property?",
+      "question_text_hi": "संपत्ति खाली किए हुए कितने दिन हो गए हैं?",
+      "ask_order": 1
+    },
+    {
+      "section_id": "tenant_deposit_withheld",
+      "fact_key": "state_has_adopted_model_tenancy_act",
+      "required": false,
+      "weight": 2,
+      "condition_operator": "exists",
+      "condition_value": null,
+      "question_text_en": "Has your state formally adopted the Model Tenancy Act, 2021?",
+      "question_text_hi": "क्या आपके राज्य ने आदर्श किरायेदारी अधिनियम, 2021 को औपचारिक रूप से अपनाया है?",
+      "ask_order": 2
+    },
+    {
+      "section_id": "tenant_illegal_eviction",
+      "fact_key": "written_notice_received",
+      "required": true,
+      "weight": 3,
+      "condition_operator": "==",
+      "condition_value": false,
+      "question_text_en": "Did you receive written notice (or pay in lieu of notice) before the termination?",
+      "question_text_hi": "क्या समाप्ति से पहले आपको लिखित सूचना (या सूचना के बदले वेतन) मिली थी?",
+      "ask_order": 0
+    },
+    {
+      "section_id": "tenant_illegal_eviction",
+      "fact_key": "notice_period_days",
+      "required": false,
+      "weight": 1,
+      "condition_operator": "exists",
+      "condition_value": null,
+      "question_text_en": "How many days of notice (if any) did you actually receive?",
+      "question_text_hi": "आपको वास्तव में कितने दिनों की सूचना (यदि कोई हो) मिली?",
+      "ask_order": 2
+    },
+    {
+      "section_id": "tenant_illegal_eviction",
+      "fact_key": "rent_payments_current",
+      "required": false,
+      "weight": 1,
+      "condition_operator": "exists",
+      "condition_value": null,
+      "question_text_en": "Are your rent payments up to date (no unpaid dues)?",
+      "question_text_hi": "क्या आपका किराया भुगतान वर्तमान में अद्यतन है (कोई बकाया नहीं)?",
+      "ask_order": 3
+    },
+    {
+      "section_id": "tenant_illegal_eviction",
+      "fact_key": "written_agreement_exists",
+      "required": false,
+      "weight": 2,
+      "condition_operator": "exists",
+      "condition_value": null,
+      "question_text_en": "Do you have a written tenancy agreement?",
+      "question_text_hi": "क्या आपके पास लिखित किरायेदारी समझौता है?",
+      "ask_order": 1
+    },
+    {
+      "section_id": "tenant_rent_hike_no_notice",
+      "fact_key": "rent_increase_percentage",
+      "required": false,
+      "weight": 1,
+      "condition_operator": "exists",
+      "condition_value": null,
+      "question_text_en": "By what percentage was your rent increased?",
+      "question_text_hi": "आपका किराया कितने प्रतिशत बढ़ाया गया?",
+      "ask_order": 3
+    },
+    {
+      "section_id": "tenant_rent_hike_no_notice",
+      "fact_key": "advance_notice_given_days",
+      "required": true,
+      "weight": 3,
+      "condition_operator": "<",
+      "condition_value": 90,
+      "question_text_en": "How many days of advance notice did your landlord give before increasing the rent?",
+      "question_text_hi": "किराया बढ़ाने से पहले मकान मालिक ने कितने दिन पहले सूचना दी?",
+      "ask_order": 0
+    },
+    {
+      "section_id": "tenant_rent_hike_no_notice",
+      "fact_key": "tenancy_agreement_specifies_revision_terms",
+      "required": false,
+      "weight": 2,
+      "condition_operator": "exists",
+      "condition_value": null,
+      "question_text_en": "Does your written tenancy agreement specify its own rent revision terms?",
+      "question_text_hi": "क्या आपके लिखित किरायेदारी समझौते में किराया संशोधन की अपनी शर्तें निर्दिष्ट हैं?",
+      "ask_order": 2
+    },
+    {
+      "section_id": "tenant_rent_hike_no_notice",
+      "fact_key": "structural_improvement_made_by_landlord",
+      "required": true,
+      "weight": 3,
+      "condition_operator": "==",
+      "condition_value": false,
+      "question_text_en": "Did the landlord make any structural improvement to the property that could justify the increase?",
+      "question_text_hi": "क्या मकान मालिक ने संपत्ति में कोई संरचनात्मक सुधार किया जो वृद्धि को उचित ठहरा सके?",
+      "ask_order": 1
+    },
+    {
+      "section_id": "tenant_no_rent_receipt",
+      "fact_key": "rent_paid_via",
+      "required": false,
+      "weight": 1,
+      "condition_operator": "exists",
+      "condition_value": null,
+      "question_text_en": "How do you pay your rent (cash, bank transfer, UPI, cheque)?",
+      "question_text_hi": "आप अपना किराया कैसे भुगतान करते हैं (नकद, बैंक ट्रांसफर, UPI, चेक)?",
+      "ask_order": 2
+    },
+    {
+      "section_id": "tenant_no_rent_receipt",
+      "fact_key": "receipt_requested_in_writing",
+      "required": false,
+      "weight": 2,
+      "condition_operator": "exists",
+      "condition_value": null,
+      "question_text_en": "Have you requested a rent receipt in writing (SMS, email, WhatsApp)?",
+      "question_text_hi": "क्या आपने लिखित रूप में (SMS, ईमेल, व्हाट्सएप) किराया रसीद का अनुरोध किया है?",
+      "ask_order": 1
+    },
+    {
+      "section_id": "tenant_no_rent_receipt",
+      "fact_key": "landlord_refused_explicitly",
+      "required": true,
+      "weight": 3,
+      "condition_operator": "==",
+      "condition_value": true,
+      "question_text_en": "Did the landlord explicitly refuse to give you a rent receipt?",
+      "question_text_hi": "क्या मकान मालिक ने किराया रसीद देने से स्पष्ट रूप से इनकार किया?",
+      "ask_order": 0
+    }
+  ]
+}
