@@ -1,10 +1,11 @@
 import React from 'react';
 import { ChevronDown, AlertTriangle } from 'lucide-react';
+import { t } from '../i18n/translations';
 
 /**
  * Collapsible "Strengthen your case" panel — missing-evidence flags
  */
-export default function ConfidenceFlagsCard({ flags = [], defaultOpen = true }) {
+export default function ConfidenceFlagsCard({ flags = [], defaultOpen = true, lang = 'en' }) {
   const [isOpen, setIsOpen] = React.useState(defaultOpen);
 
   if (!flags?.length) return null;
@@ -23,10 +24,10 @@ export default function ConfidenceFlagsCard({ flags = [], defaultOpen = true }) 
           </div>
           <div>
             <h3 className="font-serif-display text-lg text-navy-900">
-              Strengthen your case
+              {t('strengthenCase', lang)}
             </h3>
             <p className="text-sm text-navy-700/80 mt-0.5">
-              {flags.length} item{flags.length !== 1 ? 's' : ''} to gather for stronger evidence
+              {t('strengthenCaseItems', lang, flags.length)}
             </p>
           </div>
         </div>
@@ -58,8 +59,7 @@ export default function ConfidenceFlagsCard({ flags = [], defaultOpen = true }) 
           ))}
 
           <p className="text-sm text-navy-700/70 pt-2 border-t border-gold-500/15 italic leading-relaxed">
-            Gathering these documents before sending your notice will make your position
-            significantly stronger.
+            {t('strengthenCaseFooter', lang)}
           </p>
         </div>
       )}

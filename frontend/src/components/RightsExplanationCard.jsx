@@ -9,6 +9,7 @@ export default function RightsExplanationCard({
   summary = '',
   sections = [],
   notes = '',
+  applicableLawsLabel = 'Applicable Laws',
 }) {
   return (
     <div className="bg-cream-100 border-2 border-navy-900/15 rounded-xl overflow-hidden mb-5 shadow-md">
@@ -27,7 +28,7 @@ export default function RightsExplanationCard({
           <div>
             <h4 className="text-sm font-semibold text-navy-800 uppercase tracking-wide mb-3 flex items-center gap-2">
               <ScrollText size={16} className="text-gold-600" aria-hidden />
-              Applicable Laws
+              {applicableLawsLabel}
             </h4>
 
             <div className="space-y-3">
