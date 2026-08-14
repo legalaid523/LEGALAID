@@ -41,7 +41,7 @@ const DomainClassifier = ({ onClassify, onError }) => {
    */
   const fetchModelInfo = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/model/info`);
+      const response = await axios.get(`${API_BASE_URL}/api/health`);
       setModelInfo(response.data);
     } catch (err) {
       console.error('Failed to fetch model info:', err);
@@ -64,7 +64,7 @@ const DomainClassifier = ({ onClassify, onError }) => {
     setPredictions([]);
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/classify`, {
+      const response = await axios.post(`${API_BASE_URL}/api/classify`, {
         text: text,
         top_k: topK
       });

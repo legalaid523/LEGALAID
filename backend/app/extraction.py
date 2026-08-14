@@ -52,6 +52,7 @@ CRITICAL RULES:
    - "teen hafte" / "तीन हफ्ते" → 21 (if field is in days)
 8. Booleans: set true/false ONLY if the user clearly indicates it. Otherwise OMIT.
 9. If prior facts are provided, include them UNCHANGED in your output. Add new facts only.
+10. For negation phrases (e.g. 'no damage found', 'koi damage nahi tha', 'no notice given', 'landlord gave no receipt'), set the corresponding boolean field to false.
 
 OUTPUT FORMAT: Return ONLY a valid JSON object.
 Example of good output (only fields the user actually mentioned):
@@ -79,18 +80,68 @@ def _build_field_hint(pydantic_model) -> str:
     return "\n".join(lines)
 
 
+import re
+
+def _parse_direct_reply(user_message: str, last_asked_fact: Optional[str]) -> dict:
+    """Check if the user's message is a direct answer to the last asked fact."""
+    if not last_asked_fact:
+        return {}
+
+    msg = user_message.strip().lower()
+    cleaned = re.sub(r"[^\w\s\u0900-\u097F]", "", msg)
+
+    # Boolean matching
+    YES_PHRASES = {
+        "yes", "y", "yeah", "yep", "yup", "true", "haan", "ha", "haanji",
+        "hanji", "sahi", "bilkul", "yes i do", "yes i have", "yes it is",
+        "i do", "i have", "yes there is", "हाँ", "हा", "जी हाँ", "जी", "हां"
+    }
+    NO_PHRASES = {
+        "no", "n", "nope", "nah", "false", "nahi", "na", "nahin", "galat",
+        "no i dont", "no i don't", "no i havent", "no i have not", "not really",
+        "nahi hai", "no there is not", "नहीं", "ना", "जी नहीं", "न"
+    }
+
+    if cleaned in YES_PHRASES or msg in YES_PHRASES:
+        return {last_asked_fact: True}
+    if cleaned in NO_PHRASES or msg in NO_PHRASES:
+        return {last_asked_fact: False}
+
+    # Number / amount matching
+    num_match = re.search(r"(\d+(?:\.\d+)?)", msg.replace(",", ""))
+    if num_match:
+        try:
+            val = float(num_match.group(1))
+            if "k" in msg and val < 1000:
+                val *= 1000
+            elif "lakh" in msg or "lac" in msg or "लाख" in msg:
+                val *= 100000
+            elif "hazaar" in msg or "हजार" in msg:
+                val *= 1000
+            return {last_asked_fact: int(val) if val.is_integer() else val}
+        except (ValueError, TypeError):
+            pass
+
+    return {}
+
+
 def extract_facts(
     user_message: str,
     domain_id: str,
     existing_facts: Optional[dict] = None,
+    last_asked_fact: Optional[str] = None,
+    last_question_text: Optional[str] = None,
 ) -> dict:
     """
-    Extract structured facts from a user complaint.
+    Extract structured facts from a user complaint or answer.
 
     Returns merged dict of {existing_facts + newly_extracted_facts}.
     """
     pydantic_model = _get_pydantic_model(domain_id)
     field_hint = _build_field_hint(pydantic_model)
+
+    # Check for direct quick-reply answers first
+    direct_facts = _parse_direct_reply(user_message, last_asked_fact)
 
     context_block = ""
     if existing_facts:
@@ -101,9 +152,20 @@ def extract_facts(
             "Include the previously known facts UNCHANGED in your output."
         )
 
+    followup_context = ""
+    if last_asked_fact and last_question_text:
+        followup_context = (
+            f"\n\nQUESTION CURRENTLY BEING ANSWERED:\n"
+            f"The assistant just asked: \"{last_question_text}\"\n"
+            f"Target field: \"{last_asked_fact}\"\n"
+            f"If the user's message answers this question (e.g. 'Yes', 'No', 'Haan', 'Nahi', a number, or explanation), "
+            f"extract the corresponding value for \"{last_asked_fact}\".\n"
+        )
+
     prompt = (
         f"ALLOWED FIELDS (only use these keys, and only include those the user mentioned):\n"
         f"{field_hint}"
+        f"{followup_context}"
         f"{context_block}\n\n"
         f"User message:\n\"\"\"\n{user_message}\n\"\"\"\n\n"
         f"JSON output:"
@@ -130,11 +192,14 @@ def extract_facts(
             # Strip empty-ish values
             parsed = _strip_empty_values(parsed)
 
+            # Overlay direct facts if any
+            parsed.update(direct_facts)
+
             # Validate with Pydantic
             validated = pydantic_model(**parsed)
             new_facts = validated.model_dump(exclude_none=True)
 
-            merged = {**(existing_facts or {}), **new_facts}
+            merged = {**(existing_facts or {}), **direct_facts, **new_facts}
             return merged
 
         except (json.JSONDecodeError, ValidationError) as e:
@@ -148,6 +213,10 @@ def extract_facts(
                     time.sleep(3)
                     continue
             raise RuntimeError(f"Groq API error: {e}") from e
+
+    # Fallback to direct facts + existing facts if LLM retry fails
+    if direct_facts:
+        return {**(existing_facts or {}), **direct_facts}
 
     raise RuntimeError(
         f"Extraction failed after {MAX_RETRIES + 1} attempts: {last_error}"

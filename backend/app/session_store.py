@@ -31,6 +31,8 @@ def create_session() -> str:
         "extracted_facts": {},
         "target_section_id": None,
         "matched_section_ids": [],
+        "last_asked_fact": None,
+        "last_question_text": None,
         "status": "in_progress",
     }
     _in_memory_sessions[session_id] = record
@@ -50,15 +52,16 @@ def create_session() -> str:
 
 
 def get_session(session_id: str) -> Optional[dict]:
+    in_mem = _in_memory_sessions.get(session_id, {})
     client = _client()
     if client:
         try:
             resp = client.table("session_facts").select("*").eq("session_id", session_id).execute()
             if resp.data:
-                return resp.data[0]
+                return {**in_mem, **resp.data[0]}
         except Exception:
             pass
-    return _in_memory_sessions.get(session_id)
+    return in_mem if in_mem else None
 
 
 def update_session(
@@ -68,6 +71,9 @@ def update_session(
     target_section_id: Optional[str] = None,
     matched_section_ids: Optional[List[str]] = None,
     status: Optional[str] = None,
+    last_asked_fact: Optional[str] = None,
+    last_question_text: Optional[str] = None,
+    **kwargs,
 ):
     updates: dict = {}
     if domain_id is not None:
@@ -80,6 +86,11 @@ def update_session(
         updates["matched_section_ids"] = matched_section_ids
     if status is not None:
         updates["status"] = status
+    if last_asked_fact is not None:
+        updates["last_asked_fact"] = last_asked_fact
+    if last_question_text is not None:
+        updates["last_question_text"] = last_question_text
+    updates.update(kwargs)
 
     # Update in-memory fallback store
     sess = _in_memory_sessions.setdefault(session_id, {"session_id": session_id})
@@ -88,8 +99,18 @@ def update_session(
     client = _client()
     if client:
         try:
-            updates["updated_at"] = "now()"
-            client.table("session_facts").update(updates).eq("session_id", session_id).execute()
+            db_updates = {"updated_at": "now()"}
+            if domain_id is not None:
+                db_updates["domain_id"] = domain_id
+            if extracted_facts is not None:
+                db_updates["extracted_facts"] = extracted_facts
+            if target_section_id is not None:
+                db_updates["target_section_id"] = target_section_id
+            if matched_section_ids is not None:
+                db_updates["matched_section_ids"] = matched_section_ids
+            if status is not None:
+                db_updates["status"] = status
+            client.table("session_facts").update(db_updates).eq("session_id", session_id).execute()
         except Exception:
             pass
 
@@ -102,3 +123,4 @@ def delete_session(session_id: str):
             client.table("session_facts").delete().eq("session_id", session_id).execute()
         except Exception:
             pass
+

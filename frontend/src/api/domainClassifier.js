@@ -1,11 +1,11 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001';
 
 /**
  * Classify user text into a legal domain via backend POST /classify
  * @returns {{ domain: string, confidence: number }}
  */
 export async function classifyDomain(text, top_k = 3) {
-  const response = await fetch(`${API_BASE_URL}/classify`, {
+  const response = await fetch(`${API_BASE_URL}/api/classify`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text, top_k }),

@@ -33,6 +33,7 @@ class SectionScore:
     total_weight: float
     missing_required: list[dict] = field(default_factory=list)
     satisfied_facts: list[dict] = field(default_factory=list)
+    failed_required: list[dict] = field(default_factory=list)
 
 
 @dataclass
@@ -104,6 +105,7 @@ def score_section(section: dict, section_facts: list[dict], extracted_facts: dic
     satisfied_weight = 0.0
     missing_required = []
     satisfied = []
+    failed_required = []
 
     for sf in section_facts:
         if not sf.get("required", True):
@@ -113,13 +115,18 @@ def score_section(section: dict, section_facts: list[dict], extracted_facts: dic
         total_weight += weight
 
         fact_key = sf["fact_key"]
-        user_value = extracted_facts.get(fact_key)
 
-        if _satisfies_condition(user_value, sf["condition_operator"], sf.get("condition_value")):
-            satisfied_weight += weight
-            satisfied.append(sf)
-        else:
+        # If the fact has not been extracted yet, it belongs in missing_required (to be asked)
+        if fact_key not in extracted_facts or extracted_facts.get(fact_key) is None:
             missing_required.append(sf)
+        else:
+            user_value = extracted_facts.get(fact_key)
+            if _satisfies_condition(user_value, sf["condition_operator"], sf.get("condition_value")):
+                satisfied_weight += weight
+                satisfied.append(sf)
+            else:
+                # Answered by user, but failed condition -> NEVER ask again
+                failed_required.append(sf)
 
     score = satisfied_weight / total_weight if total_weight > 0 else 0.0
 
@@ -131,6 +138,7 @@ def score_section(section: dict, section_facts: list[dict], extracted_facts: dic
         total_weight=total_weight,
         missing_required=missing_required,
         satisfied_facts=satisfied,
+        failed_required=failed_required,
     )
 
 
@@ -166,11 +174,11 @@ def match_sections(domain_id: str, extracted_facts: dict) -> MatchResult:
             continue   # section has no fact requirements → skip
         scored.append(score_section(section, section_facts, extracted_facts))
 
-    # 4. Sort by score descending
-    scored.sort(key=lambda s: s.score, reverse=True)
+    # 4. Sort by score descending (sections without failures preferred)
+    scored.sort(key=lambda s: (len(s.failed_required) == 0, s.score), reverse=True)
 
     # 5. Identify fully-matched sections
-    matched = [s for s in scored if s.score >= FULL_MATCH_THRESHOLD]
+    matched = [s for s in scored if s.score >= FULL_MATCH_THRESHOLD and not s.failed_required]
 
     # 6. Determine status + target
     if matched:
@@ -183,7 +191,12 @@ def match_sections(domain_id: str, extracted_facts: dict) -> MatchResult:
             ambiguous_candidates=matched if len(matched) > 1 else [],
         )
 
-    if not scored or scored[0].score <= MIN_SCORE_TO_CONSIDER:
+    # Find viable sections that have unasked questions
+    viable = [s for s in scored if s.missing_required and not s.failed_required]
+    if not viable:
+        viable = [s for s in scored if s.missing_required]
+
+    if not viable:
         return MatchResult(
             status="no_match",
             ranked_sections=scored,
@@ -193,8 +206,8 @@ def match_sections(domain_id: str, extracted_facts: dict) -> MatchResult:
         )
 
     # 7. Not fully matched yet → detect ambiguity among top candidates
-    top = scored[0]
-    close_candidates = [s for s in scored if (top.score - s.score) <= AMBIGUITY_DELTA]
+    top = viable[0]
+    close_candidates = [s for s in viable if (top.score - s.score) <= AMBIGUITY_DELTA]
 
     return MatchResult(
         status="need_more_facts",

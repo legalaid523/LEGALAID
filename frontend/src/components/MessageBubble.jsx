@@ -3,12 +3,15 @@ import { ShieldAlert } from 'lucide-react';
 
 /**
  * MessageBubble — user (navy, right) and bot (cream, gold left border) messages
+ * Supports optional quick-reply buttons for backend-driven options.
  */
 export default function MessageBubble({
   message,
   isUser = false,
   timestamp = null,
   showDisclaimer = false,
+  quickReplies = null,
+  onQuickReply = null,
 }) {
   const formatTime = (ts) => {
     if (!ts) return null;
@@ -48,6 +51,22 @@ export default function MessageBubble({
           {renderText(message)}
         </p>
 
+        {/* Quick reply buttons */}
+        {!isUser && quickReplies && quickReplies.length > 0 && onQuickReply && (
+          <div className="mt-3 pt-3 border-t border-gold-500/20 flex flex-wrap gap-2">
+            {quickReplies.map((reply, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => onQuickReply(reply)}
+                className="px-4 py-2 text-sm font-medium rounded-lg border-2 border-gold-500/50 text-navy-900 bg-white hover:bg-gold-500 hover:text-white hover:border-gold-500 transition-colors min-h-[40px]"
+              >
+                {reply}
+              </button>
+            ))}
+          </div>
+        )}
+
         {showDisclaimer && (
           <div className="mt-3 pt-3 border-t border-gold-500/30 flex items-start gap-2">
             <ShieldAlert
@@ -74,3 +93,4 @@ export default function MessageBubble({
     </div>
   );
 }
+

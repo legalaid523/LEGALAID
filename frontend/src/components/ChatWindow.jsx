@@ -1,26 +1,42 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Scale, Languages, Send, Mic, Cpu, CheckCircle2, ChevronDown, Code } from 'lucide-react';
+import { Scale, Languages, Send, Mic, ChevronDown } from 'lucide-react';
 import MessageBubble from './MessageBubble';
 import LoadingIndicator from './LoadingIndicator';
 import DomainBadge from './DomainBadge';
-import { classifyDomain } from '../api/domainClassifier';
+import RightsExplanationCard from './RightsExplanationCard';
+import ConfidenceFlagsCard from './ConfidenceFlagsCard';
+import PdfDownloadButton from './PdfDownloadButton';
+import { startSession, sendMessage } from '../api/legalaidApi';
 
-const LANGUAGES = ['English', 'Hindi', 'Hinglish'];
+const LANGUAGES = [
+  { label: 'English', code: 'en' },
+  { label: 'Hindi', code: 'hi' },
+  { label: 'Hinglish', code: 'en' },
+];
 
 let messageId = 1;
 const nextId = () => ++messageId;
 
 /**
- * ChatWindow — Model Classification Performance & Accuracy Evaluation Interface
+ * ChatWindow — Multi-turn conversation interface backed by the LegalAId backend.
+ *
+ * Flow:
+ * 1. On mount → startSession() to get session_id
+ * 2. User sends message → sendMessage() → backend classifies + extracts + scores
+ * 3. If need_more_facts → display next question (with quick replies if options)
+ * 4. If matched → display RightsExplanationCard + ConfidenceFlagsCard + PdfDownloadButton
+ * 5. If no_match → generic guidance message
  */
 export default function ChatWindow() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [language, setLanguage] = useState('English');
+  const [language, setLanguage] = useState(LANGUAGES[0]);
   const [langMenuOpen, setLangMenuOpen] = useState(false);
-  const [latestClassification, setLatestClassification] = useState(null);
-  const [showJson, setShowJson] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
+  const [domainInfo, setDomainInfo] = useState(null); // { domain_id, confidence }
+  const [matchResult, setMatchResult] = useState(null); // full match data when status=matched
+  const [conversationDone, setConversationDone] = useState(false);
   const messagesEndRef = useRef(null);
   const langMenuRef = useRef(null);
 
@@ -30,13 +46,25 @@ export default function ChatWindow() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isLoading, latestClassification, scrollToBottom]);
+  }, [messages, isLoading, matchResult, scrollToBottom]);
 
+  // Initialize session on mount
   useEffect(() => {
+    const init = async () => {
+      try {
+        const { session_id } = await startSession();
+        setSessionId(session_id);
+      } catch {
+        // Session start failed — still show the welcome message, will retry on first send
+        console.warn('Could not start session — will retry on first message');
+      }
+    };
+    init();
+
     setMessages([
       {
         id: nextId(),
-        text: `Welcome to **LegalAId Domain Classifier Test Bench**.\n\nEnter any legal case query or description to test the live model classification, accuracy, and confidence scores across legal domains (**tenant**, **labor**, **consumer**).`,
+        text: `Welcome to **LegalAId** — your intelligent legal rights assistant.\n\nDescribe your legal issue in detail: what happened, when, and who is involved. I will classify your case, gather the relevant facts, and identify the applicable Indian laws for your situation.\n\nYou can speak in **English**, **Hindi**, or **Hinglish**.`,
         isUser: false,
         timestamp: new Date(),
         showDisclaimer: true,
@@ -44,6 +72,7 @@ export default function ChatWindow() {
     ]);
   }, []);
 
+  // Close language menu on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (langMenuRef.current && !langMenuRef.current.contains(e.target)) {
@@ -70,34 +99,63 @@ export default function ChatWindow() {
 
   const submitMessage = async (text) => {
     const trimmed = text.trim();
-    if (!trimmed || isLoading) return;
+    if (!trimmed || isLoading || conversationDone) return;
 
     addUserMessage(trimmed);
     setInput('');
     setIsLoading(true);
-    setLatestClassification(null);
-
-    const startTime = performance.now();
 
     try {
-      const responseData = await classifyDomain(trimmed, 3);
-      const predictions = Array.isArray(responseData) ? responseData : [responseData];
-      const latency = (performance.now() - startTime).toFixed(0);
+      // Ensure we have a session
+      let currentSessionId = sessionId;
+      if (!currentSessionId) {
+        const { session_id } = await startSession();
+        currentSessionId = session_id;
+        setSessionId(currentSessionId);
+      }
 
-      const topPred = predictions[0] || { domain: 'Unknown', confidence: 0 };
-      setLatestClassification({
-        predictions,
-        topPred,
-        latencyMs: latency,
-        rawText: trimmed,
-      });
+      const result = await sendMessage(currentSessionId, trimmed, language.code);
 
-      addBotMessage(
-        `**Model Classification Result:**\n• **Predicted Domain:** \`${topPred.domain.toUpperCase()}\`\n• **Confidence Score:** \`${(topPred.confidence * 100).toFixed(2)}%\`\n• **Inference Latency:** \`${latency}ms\``
-      );
+      // Set domain info on first classification
+      if (result.domain_id && !domainInfo) {
+        setDomainInfo({
+          domain_id: result.domain_id,
+          confidence: result.domain_confidence,
+        });
+      }
+
+      if (result.status === 'need_more_facts' && result.next_question) {
+        const q = result.next_question;
+        addBotMessage(q.question_text, {
+          quickReplies: q.options || null,
+        });
+      } else if (result.status === 'matched') {
+        setMatchResult(result);
+        setConversationDone(true);
+
+        // Build summary
+        const section = result.matched_sections?.[0];
+        const issueLabel = section?.issue?.replace(/_/g, ' ') || 'your case';
+        const domainLabel = (result.domain_id || '').charAt(0).toUpperCase() + (result.domain_id || '').slice(1);
+
+        const factSummary = result.extracted_facts
+          ? Object.entries(result.extracted_facts)
+              .map(([k, v]) => `• **${k.replace(/_/g, ' ')}:** ${v}`)
+              .join('\n')
+          : '';
+
+        addBotMessage(
+          `**Case Analysis Complete** ✅\n\n**Domain:** ${domainLabel} Dispute\n**Issue:** ${issueLabel}\n**Match Score:** ${((section?.score || 0) * 100).toFixed(0)}%\n\n**Extracted Facts:**\n${factSummary}\n\nBelow you will find your applicable legal rights, recommended evidence to strengthen your case, and a downloadable legal notice.`
+        );
+      } else if (result.status === 'no_match') {
+        setConversationDone(true);
+        addBotMessage(
+          `I was unable to match your situation to a specific tracked legal section. This doesn't mean you don't have rights — it means your case may require professional legal counsel.\n\n**Suggestions:**\n• Try describing your situation with more specific details\n• Contact your nearest Legal Aid office\n• You can start a new conversation to try again`
+        );
+      }
     } catch (err) {
       addBotMessage(
-        `❌ **Classification Error:** ${err.message || 'Could not connect to FastAPI server at http://localhost:8000'}`
+        `❌ **Error:** ${err.message || 'Could not connect to the backend server. Make sure the FastAPI server is running.'}`
       );
     } finally {
       setIsLoading(false);
@@ -105,6 +163,10 @@ export default function ChatWindow() {
   };
 
   const handleSend = () => submitMessage(input);
+
+  const handleQuickReply = (replyText) => {
+    submitMessage(replyText);
+  };
 
   return (
     <div className="flex flex-col h-full bg-cream-50">
@@ -120,7 +182,7 @@ export default function ChatWindow() {
             aria-label="Change language"
           >
             <Languages size={18} aria-hidden />
-            <span>{language}</span>
+            <span>{language.label}</span>
             <ChevronDown size={14} aria-hidden />
           </button>
 
@@ -130,22 +192,22 @@ export default function ChatWindow() {
               className="absolute end-0 top-full mt-1 w-40 bg-cream-100 border border-gold-500/30 rounded-lg shadow-xl overflow-hidden z-20"
             >
               {LANGUAGES.map((lang) => (
-                <li key={lang}>
+                <li key={lang.label}>
                   <button
                     type="button"
                     role="option"
-                    aria-selected={language === lang}
+                    aria-selected={language.label === lang.label}
                     onClick={() => {
                       setLanguage(lang);
                       setLangMenuOpen(false);
                     }}
                     className={`w-full text-start px-4 py-3 text-sm min-h-[44px] transition-colors ${
-                      language === lang
+                      language.label === lang.label
                         ? 'bg-gold-500/15 text-navy-900 font-semibold'
                         : 'text-navy-800 hover:bg-cream-200'
                     }`}
                   >
-                    {lang}
+                    {lang.label}
                   </button>
                 </li>
               ))}
@@ -157,10 +219,11 @@ export default function ChatWindow() {
       {/* Chat area */}
       <main className="flex-1 overflow-y-auto px-4 py-5">
         <div className="max-w-2xl mx-auto">
-          {latestClassification && (
+          {/* Domain badge — shown after classification */}
+          {domainInfo && (
             <DomainBadge
-              domain={latestClassification.topPred.domain}
-              confidence={latestClassification.topPred.confidence}
+              domain={domainInfo.domain_id}
+              confidence={domainInfo.confidence}
             />
           )}
 
@@ -171,84 +234,53 @@ export default function ChatWindow() {
               isUser={msg.isUser}
               timestamp={msg.timestamp}
               showDisclaimer={msg.showDisclaimer}
+              quickReplies={msg.quickReplies}
+              onQuickReply={handleQuickReply}
             />
           ))}
 
           {isLoading && (
-            <LoadingIndicator variant="gavel" message="Evaluating Model Classification..." />
+            <LoadingIndicator variant="gavel" message="Analyzing your case..." />
           )}
 
-          {latestClassification && Array.isArray(latestClassification.predictions) && !isLoading && (
-            <div className="bg-white border-2 border-gold-500/60 rounded-xl shadow-lg p-5 mb-5 space-y-4">
-              <div className="flex items-center justify-between border-b pb-3">
-                <div className="flex items-center gap-2">
-                  <Cpu size={24} className="text-gold-600" />
-                  <h3 className="font-serif text-lg font-bold text-navy-900">
-                    Live Model Classification Performance
-                  </h3>
-                </div>
-                <span className="text-xs bg-navy-900 text-gold-500 px-2.5 py-1 rounded-full font-mono">
-                  {latestClassification.latencyMs} ms
-                </span>
-              </div>
+          {/* Matched result cards — shown after conversation completes with a match */}
+          {matchResult && !isLoading && (
+            <>
+              {matchResult.applicable_laws?.length > 0 && (
+                <RightsExplanationCard
+                  issue={
+                    matchResult.matched_sections?.[0]?.issue
+                      ? `Your Rights — ${matchResult.matched_sections[0].issue.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}`
+                      : 'Your Legal Rights'
+                  }
+                  summary={matchResult.matched_sections?.[0]?.notes || ''}
+                  sections={matchResult.applicable_laws.map((law) => ({
+                    act: law.act,
+                    section: law.section_number,
+                    title: law.section_number,
+                    text_summary: law.text_summary,
+                    source_url: law.source_url,
+                  }))}
+                  notes="State-specific rules may vary. Keep written records of all communication."
+                />
+              )}
 
-              <div className="flex items-center justify-between bg-cream-100 p-3.5 rounded-lg border border-gold-500/30">
-                <div>
-                  <p className="text-xs text-navy-700 font-medium uppercase tracking-wider">Top Predicted Domain</p>
-                  <p className="text-xl font-serif font-bold text-navy-900 capitalize mt-0.5">
-                    {latestClassification.topPred.domain}
-                  </p>
-                </div>
-                <div className="text-end">
-                  <p className="text-xs text-navy-700 font-medium uppercase tracking-wider">Confidence Score</p>
-                  <p className="text-2xl font-bold text-gold-600 font-mono">
-                    {(latestClassification.topPred.confidence * 100).toFixed(1)}%
-                  </p>
-                </div>
-              </div>
+              {matchResult.confidence_flags?.length > 0 && (
+                <ConfidenceFlagsCard
+                  flags={matchResult.confidence_flags}
+                  defaultOpen
+                />
+              )}
 
-              <div>
-                <p className="text-xs font-semibold text-navy-800 uppercase tracking-wider mb-2">
-                  Domain Probabilities Breakdown (Top-K)
-                </p>
-                <div className="space-y-2.5">
-                  {latestClassification.predictions.map((pred, i) => {
-                    const pct = (pred.confidence * 100).toFixed(1);
-                    return (
-                      <div key={i} className="space-y-1">
-                        <div className="flex justify-between text-sm font-medium text-navy-900">
-                          <span className="capitalize">{pred.domain}</span>
-                          <span className="font-mono text-gold-700 font-bold">{pct}%</span>
-                        </div>
-                        <div className="w-full bg-cream-200 h-2.5 rounded-full overflow-hidden">
-                          <div
-                            className="bg-gold-500 h-full rounded-full transition-all duration-500"
-                            style={{ width: `${Math.max(pct, 3)}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-navy-900/10">
-                <button
-                  type="button"
-                  onClick={() => setShowJson((s) => !s)}
-                  className="flex items-center gap-1.5 text-xs font-semibold text-navy-700 hover:text-gold-700 transition-colors"
-                >
-                  <Code size={14} />
-                  <span>{showJson ? 'Hide Raw API JSON Response' : 'Show Raw API JSON Response'}</span>
-                </button>
-
-                {showJson && (
-                  <pre className="mt-3 p-3 bg-navy-900 text-cream-100 text-xs font-mono rounded-lg overflow-x-auto">
-                    {JSON.stringify(latestClassification.predictions, null, 2)}
-                  </pre>
-                )}
-              </div>
-            </div>
+              <PdfDownloadButton
+                documentTitle={`Legal Notice — ${
+                  matchResult.matched_sections?.[0]?.issue?.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || 'Your Case'
+                }`}
+                documentType="notice"
+                onDownload={() => alert('PDF generation coming soon — this feature is under development.')}
+                onEdit={() => alert('Edit feature coming soon.')}
+              />
+            </>
           )}
 
           <div ref={messagesEndRef} />
@@ -269,8 +301,9 @@ export default function ChatWindow() {
                   handleSend();
                 }
               }}
-              placeholder="Describe your situation..."
-              className="flex-1 px-4 py-3.5 bg-cream-50 text-navy-900 text-base rounded-xl border-2 border-navy-900/15 focus:outline-none focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 placeholder-navy-700/50 min-h-[48px]"
+              placeholder={conversationDone ? 'Conversation complete' : 'Describe your situation...'}
+              disabled={conversationDone}
+              className="flex-1 px-4 py-3.5 bg-cream-50 text-navy-900 text-base rounded-xl border-2 border-navy-900/15 focus:outline-none focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 placeholder-navy-700/50 min-h-[48px] disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="Message input"
             />
 
@@ -287,7 +320,7 @@ export default function ChatWindow() {
             <button
               type="button"
               onClick={handleSend}
-              disabled={!input.trim() || isLoading}
+              disabled={!input.trim() || isLoading || conversationDone}
               className="p-3 bg-gold-500 text-white rounded-xl hover:bg-gold-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors min-h-[48px] min-w-[48px] flex items-center justify-center"
               aria-label="Send message"
             >
